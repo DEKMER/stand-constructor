@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-heading: 'Oswald', 'Roboto Condensed', 'Montserrat', sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+    --font-brand: 'Montserrat', sans-serif;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
+    font-family: var(--font-body);
+    background-color: #0b0f19;
+    color: #f1f5f9;
+  }
+
+  #root {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/* Custom Typography Classes */
+.font-surname {
+  font-family: 'Oswald', 'Roboto Condensed', sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.font-brand {
+  font-family: 'Montserrat', sans-serif;
+}
+
+.font-main {
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Dot grid matrix background like in Screenshot 2 */
+.bg-dot-matrix-crimson {
+  background-image: radial-gradient(circle, #b91c3e 1.5px, transparent 1.5px);
+  background-size: 14px 14px;
+}
+
+.bg-dot-matrix-subtle {
+  background-image: radial-gradient(circle, #8a152e 1.2px, transparent 1.2px);
+  background-size: 13px 13px;
+}
+
+.bg-dot-matrix-light {
+  background-image: radial-gradient(circle, rgba(163, 20, 50, 0.4) 1.5px, transparent 1.5px);
+  background-size: 12px 12px;
+}
+
+/* Custom scrollbars for clean UI */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #111827;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #374151;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4b5563;
+}
+
+/* Dragging cursor state */
+.cursor-grab {
+  cursor: grab;
+}
+.cursor-grabbing {
+  cursor: grabbing;
+}
