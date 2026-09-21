@@ -1,7 +1,9 @@
 import { toPng } from 'html-to-image';
 import confetti from 'canvas-confetti';
+import { PaperFormat } from '../types/stand';
 
 export interface ExportOptions {
+  format?: PaperFormat;
   pixelRatio?: number;
   fileName?: string;
   onProgress?: (status: string) => void;
@@ -11,7 +13,7 @@ export const exportStandToPng = async (
   elementId: string = 'department-stand-print-root',
   options: ExportOptions = {}
 ): Promise<void> => {
-  const { pixelRatio = 3, fileName = 'Стенд_кафедры_ватман_А1.png', onProgress } = options;
+  const { pixelRatio = 3, fileName = 'Стенд_кафедры.png', onProgress } = options;
 
   const node = document.getElementById(elementId);
   if (!node) {
@@ -52,7 +54,7 @@ export const exportStandToPng = async (
       dataUrl = await toPng(node, {
         pixelRatio: pixelRatio,
         cacheBust: true,
-        skipFonts: true, // Prevents CORS errors on external Google Fonts stylesheets
+        skipFonts: true,
         quality: 0.98,
         style: {
           transform: 'none',

@@ -178,27 +178,10 @@ export const App: React.FC = () => {
 
       {/* Main Workspace Area */}
       <div className="relative flex-1 flex overflow-hidden">
-        {/* Collapsible Sidebar Controls */}
-        <Sidebar
-          data={data}
-          onUpdateHeader={handleUpdateHeader}
-          onUpdateHeadPerson={handleUpdateHeadPerson}
-          onUpdateTeacher={handleUpdateTeacher}
-          onDeleteTeacher={handleDeleteTeacher}
-          onMoveTeacher={handleMoveTeacher}
-          onAddTeacher={handleAddTeacher}
-          onUpdateSchedule={handleUpdateSchedule}
-          onUpdateConfig={handleUpdateConfig}
-          isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
-        />
-
-        {/* Scalable Stand Canvas Workspace */}
+        {/* Scalable Stand Canvas Workspace (Centered) */}
         <main
           ref={canvasContainerRef}
-          className={`flex-1 overflow-auto flex items-start justify-center p-6 bg-[#0c101b] transition-all duration-300 ${
-            isSidebarOpen ? 'ml-[380px]' : 'ml-0'
-          }`}
+          className="flex-1 overflow-auto flex items-start justify-center p-6 bg-[#0c101b] transition-all duration-300"
         >
           <StandCanvas
             data={data}
@@ -214,6 +197,21 @@ export const App: React.FC = () => {
             isEditable={!isExporting}
           />
         </main>
+
+        {/* Collapsible Sidebar Controls on the Right */}
+        <Sidebar
+          data={data}
+          onUpdateHeader={handleUpdateHeader}
+          onUpdateHeadPerson={handleUpdateHeadPerson}
+          onUpdateTeacher={handleUpdateTeacher}
+          onDeleteTeacher={handleDeleteTeacher}
+          onMoveTeacher={handleMoveTeacher}
+          onAddTeacher={handleAddTeacher}
+          onUpdateSchedule={handleUpdateSchedule}
+          onUpdateConfig={handleUpdateConfig}
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+        />
       </div>
 
       {/* High-Resolution PNG Whatman Export Modal */}

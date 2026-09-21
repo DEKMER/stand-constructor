@@ -124,8 +124,10 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
           title="Формат бумаги для печати"
         >
           <option value="A1">Ватман А1 (841×594 мм)</option>
-          <option value="A0">Ватман А0 (1189×841 мм)</option>
           <option value="A2">Ватман А2 (594×420 мм)</option>
+          <option value="A3">Формат А3 (420×297 мм)</option>
+          <option value="A4">Формат А4 (297×210 мм)</option>
+          <option value="A0">Ватман А0 (1189×841 мм)</option>
           <option value="16:9">Экран 16:9</option>
           <option value="4:3">Экран 4:3</option>
         </select>

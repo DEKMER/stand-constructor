@@ -55,7 +55,7 @@ export interface BlockLayout {
   schedule: { x: number; y: number; width?: number };
 }
 
-export type PaperFormat = 'A1' | 'A2' | 'A0' | '16:9' | '4:3';
+export type PaperFormat = 'A1' | 'A2' | 'A3' | 'A4' | 'A0' | '16:9' | '4:3';
 
 export interface StandConfig {
   paperFormat: PaperFormat;

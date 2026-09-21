@@ -77,6 +77,8 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
         case 'A0':
         case 'A1':
         case 'A2':
+        case 'A3':
+        case 'A4':
         default:
           return { width: 1600, height: 1131 };
         case '16:9':
