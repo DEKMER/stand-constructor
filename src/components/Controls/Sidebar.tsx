@@ -397,27 +397,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-[10px] text-slate-400 mb-0.5">Имя:</label>
-                          <input
-                            type="text"
-                            value={t.firstName}
-                            onChange={(e) => onUpdateTeacher(t.id, { firstName: e.target.value })}
-                            placeholder="Имя"
-                            className="w-full bg-slate-900 px-2.5 py-1.5 rounded-lg text-slate-200 text-xs border border-slate-700 focus:border-rose-500 focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] text-slate-400 mb-0.5">Отчество:</label>
-                          <input
-                            type="text"
-                            value={t.patronymic}
-                            onChange={(e) => onUpdateTeacher(t.id, { patronymic: e.target.value })}
-                            placeholder="Отчество"
-                            className="w-full bg-slate-900 px-2.5 py-1.5 rounded-lg text-slate-200 text-xs border border-slate-700 focus:border-rose-500 focus:outline-none"
-                          />
-                        </div>
+                      <div>
+                        <label className="block text-[10px] text-slate-400 mb-0.5">Имя и Отчество:</label>
+                        <input
+                          type="text"
+                          value={
+                            t.firstName && t.patronymic
+                              ? `${t.firstName} ${t.patronymic}`
+                              : t.firstName || t.patronymic || ''
+                          }
+                          onChange={(e) => {
+                            const parts = e.target.value.trimStart().split(/\s+/);
+                            onUpdateTeacher(t.id, {
+                              firstName: parts[0] || '',
+                              patronymic: parts.slice(1).join(' '),
+                            });
+                          }}
+                          placeholder="Имя Отчество"
+                          className="w-full bg-slate-900 px-2.5 py-1.5 rounded-lg text-slate-200 text-xs border border-slate-700 focus:border-rose-500 focus:outline-none font-medium"
+                        />
                       </div>
 
                       <div>
@@ -506,25 +504,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-slate-400 mb-1">Имя:</label>
-                    <input
-                      type="text"
-                      value={headPerson.firstName}
-                      onChange={(e) => onUpdateHeadPerson({ firstName: e.target.value })}
-                      className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-slate-400 mb-1">Отчество:</label>
-                    <input
-                      type="text"
-                      value={headPerson.patronymic}
-                      onChange={(e) => onUpdateHeadPerson({ patronymic: e.target.value })}
-                      className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-slate-400 mb-1">Имя и Отчество:</label>
+                  <input
+                    type="text"
+                    value={
+                      headPerson.firstName && headPerson.patronymic
+                        ? `${headPerson.firstName} ${headPerson.patronymic}`
+                        : headPerson.firstName || headPerson.patronymic || ''
+                    }
+                    onChange={(e) => {
+                      const parts = e.target.value.trimStart().split(/\s+/);
+                      onUpdateHeadPerson({
+                        firstName: parts[0] || '',
+                        patronymic: parts.slice(1).join(' '),
+                      });
+                    }}
+                    placeholder="Имя Отчество"
+                    className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none font-medium"
+                  />
                 </div>
 
                 <div>

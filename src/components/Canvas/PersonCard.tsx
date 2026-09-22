@@ -263,31 +263,31 @@ export const PersonCard: React.FC<PersonCardProps> = ({
               </div>
             )}
 
-            {/* First name & Patronymic */}
-            <div className="flex items-center gap-1 mt-0.5 text-slate-800 font-semibold text-[11px] xl:text-xs leading-tight">
+            {/* First name & Patronymic in single contiguous field */}
+            <div className="mt-0.5 text-slate-800 font-bold text-xs xl:text-[12.5px] leading-tight">
               {isEditable ? (
-                <>
-                  <input
-                    type="text"
-                    value={teacher.firstName}
-                    onChange={(e) => onUpdate({ firstName: e.target.value })}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    placeholder="Имя"
-                    className="w-1/2 border-b border-transparent hover:border-slate-300 focus:border-rose-600 focus:outline-none transition-colors truncate bg-transparent"
-                  />
-                  <input
-                    type="text"
-                    value={teacher.patronymic}
-                    onChange={(e) => onUpdate({ patronymic: e.target.value })}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    placeholder="Отчество"
-                    className="w-1/2 border-b border-transparent hover:border-slate-300 focus:border-rose-600 focus:outline-none transition-colors truncate bg-transparent"
-                  />
-                </>
+                <input
+                  type="text"
+                  value={
+                    teacher.firstName && teacher.patronymic
+                      ? `${teacher.firstName} ${teacher.patronymic}`
+                      : teacher.firstName || teacher.patronymic || ''
+                  }
+                  onChange={(e) => {
+                    const parts = e.target.value.trimStart().split(/\s+/);
+                    onUpdate({
+                      firstName: parts[0] || '',
+                      patronymic: parts.slice(1).join(' '),
+                    });
+                  }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  placeholder="Имя Отчество"
+                  className="w-full border-b border-transparent hover:border-slate-300 focus:border-rose-600 focus:outline-none transition-colors truncate bg-transparent font-bold"
+                />
               ) : (
-                <span className="truncate">
+                <div className="truncate font-bold">
                   {teacher.firstName} {teacher.patronymic}
-                </span>
+                </div>
               )}
             </div>
 

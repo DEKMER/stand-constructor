@@ -173,29 +173,30 @@ export const HeadPersonBlock: React.FC<HeadPersonBlockProps> = ({
             </h2>
           )}
 
-          {/* First name & Patronymic */}
-          <div className="flex items-center gap-1 text-slate-900 font-bold text-sm xl:text-base leading-tight">
+          {/* First name & Patronymic in single contiguous field */}
+          <div className="text-slate-900 font-bold text-sm xl:text-base leading-tight">
             {isEditable ? (
-              <>
-                <input
-                  type="text"
-                  value={headPerson.firstName}
-                  onChange={(e) => onUpdate({ firstName: e.target.value })}
-                  placeholder="Имя"
-                  className="w-1/2 border-b border-transparent hover:border-slate-300 focus:border-rose-600 focus:outline-none transition-colors truncate bg-transparent"
-                />
-                <input
-                  type="text"
-                  value={headPerson.patronymic}
-                  onChange={(e) => onUpdate({ patronymic: e.target.value })}
-                  placeholder="Отчество"
-                  className="w-1/2 border-b border-transparent hover:border-slate-300 focus:border-rose-600 focus:outline-none transition-colors truncate bg-transparent"
-                />
-              </>
+              <input
+                type="text"
+                value={
+                  headPerson.firstName && headPerson.patronymic
+                    ? `${headPerson.firstName} ${headPerson.patronymic}`
+                    : headPerson.firstName || headPerson.patronymic || ''
+                }
+                onChange={(e) => {
+                  const parts = e.target.value.trimStart().split(/\s+/);
+                  onUpdate({
+                    firstName: parts[0] || '',
+                    patronymic: parts.slice(1).join(' '),
+                  });
+                }}
+                placeholder="Имя Отчество"
+                className="w-full border-b border-transparent hover:border-slate-300 focus:border-rose-600 focus:outline-none transition-colors truncate bg-transparent font-bold"
+              />
             ) : (
-              <span className="truncate">
+              <div className="truncate font-bold">
                 {headPerson.firstName} {headPerson.patronymic}
-              </span>
+              </div>
             )}
           </div>
 
