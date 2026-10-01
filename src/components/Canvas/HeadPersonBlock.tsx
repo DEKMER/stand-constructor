@@ -84,7 +84,7 @@ export const HeadPersonBlock: React.FC<HeadPersonBlockProps> = ({
 
         {/* Top ribbon badge */}
         <div className="flex-shrink-0 flex items-center justify-between mb-1.5">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-[#7a0c22] to-[#c41e3a] text-white text-[10.5px] font-bold uppercase tracking-wider shadow-xs">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-[#bd1818] to-[#e02626] text-white text-[10.5px] font-bold uppercase tracking-wider shadow-xs">
             <Award className="w-3 h-3" />
             {headPerson.role || 'Заведующий кафедрой'}
           </span>
@@ -165,10 +165,10 @@ export const HeadPersonBlock: React.FC<HeadPersonBlockProps> = ({
               value={headPerson.lastName}
               onChange={(e) => onUpdate({ lastName: e.target.value.toUpperCase() })}
               placeholder="ФАМИЛИЯ"
-              className="font-surname font-black text-2xl xl:text-3xl text-[#7a0c22] tracking-wider border-b border-transparent hover:border-rose-300 focus:border-rose-600 focus:outline-none transition-colors w-full leading-tight truncate bg-transparent"
+              className="font-surname font-black text-2xl xl:text-3xl text-[#bd1818] tracking-wider border-b border-transparent hover:border-rose-300 focus:border-rose-600 focus:outline-none transition-colors w-full leading-tight truncate bg-transparent"
             />
           ) : (
-            <h2 className="font-surname font-black text-2xl xl:text-3xl text-[#7a0c22] tracking-wider leading-tight truncate">
+            <h2 className="font-surname font-black text-2xl xl:text-3xl text-[#bd1818] tracking-wider leading-tight truncate">
               {headPerson.lastName}
             </h2>
           )}
@@ -201,7 +201,7 @@ export const HeadPersonBlock: React.FC<HeadPersonBlockProps> = ({
           </div>
 
           {/* Horizontal Red Accent Underline */}
-          <div className="h-[2.5px] w-14 bg-[#c41e3a] my-1 rounded-full" />
+          <div className="h-[2.5px] w-14 bg-[#bd1818] my-1 rounded-full" />
 
           {/* Degree and Academic Rank */}
           {isEditable ? (
@@ -210,10 +210,10 @@ export const HeadPersonBlock: React.FC<HeadPersonBlockProps> = ({
               onChange={(e) => onUpdate({ degree: e.target.value })}
               placeholder="Ученая степень, звание"
               rows={2}
-              className="text-[11px] font-bold uppercase tracking-wider text-[#9e1432] leading-tight border border-transparent hover:border-rose-300 focus:border-rose-600 focus:outline-none rounded p-0.5 transition-colors resize-none bg-transparent"
+              className="text-[11px] font-bold uppercase tracking-wider text-[#9e1010] leading-tight border border-transparent hover:border-rose-300 focus:border-rose-600 focus:outline-none rounded p-0.5 transition-colors resize-none bg-transparent"
             />
           ) : (
-            <div className="text-[11px] font-bold uppercase tracking-wider text-[#9e1432] leading-tight line-clamp-2">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-[#9e1010] leading-tight line-clamp-2">
               {headPerson.degree}
             </div>
           )}
@@ -222,7 +222,7 @@ export const HeadPersonBlock: React.FC<HeadPersonBlockProps> = ({
         {/* Bottom Info: Reception Hours & Contacts */}
         <div className="pt-2 border-t border-rose-100 mt-2 space-y-1 text-xs text-slate-700">
           <div className="flex items-center gap-1.5">
-            <Clock className="w-3 h-3 text-[#c41e3a] flex-shrink-0" />
+            <Clock className="w-3 h-3 text-[#bd1818] flex-shrink-0" />
             {isEditable ? (
               <input
                 type="text"
@@ -237,7 +237,7 @@ export const HeadPersonBlock: React.FC<HeadPersonBlockProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5">
-            <Mail className="w-3 h-3 text-[#c41e3a] flex-shrink-0" />
+            <Mail className="w-3 h-3 text-[#bd1818] flex-shrink-0" />
             {isEditable ? (
               <input
                 type="text"

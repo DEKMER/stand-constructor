@@ -41,7 +41,7 @@ export const StandHeader: React.FC<StandHeaderProps> = ({
         className="hidden"
       />
 
-      <div className="flex items-center justify-between gap-6 backdrop-blur-md bg-gradient-to-r from-[#5a0416]/90 via-[#7a0c22]/90 to-[#8c102a]/85 rounded-xl px-5 py-2 border border-white/25 shadow-lg">
+      <div className="flex items-center justify-between gap-6 backdrop-blur-md bg-gradient-to-r from-[#6e0808]/95 via-[#bd1818]/95 to-[#9e1010]/90 rounded-xl px-5 py-2 border border-white/25 shadow-lg">
         {/* Left Side: Logo + University + Institute */}
         <div className="flex items-center gap-4 flex-shrink-0">
           {header.showLogo && (

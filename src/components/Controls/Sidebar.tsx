@@ -14,6 +14,7 @@ import {
   X,
   Camera,
   Crop,
+  FileText,
 } from 'lucide-react';
 import { ImageCropModal } from './ImageCropModal';
 
@@ -27,11 +28,15 @@ interface SidebarProps {
   onAddTeacher: () => void;
   onUpdateSchedule: (patch: Partial<StandData['schedule']>) => void;
   onUpdateConfig: (patch: Partial<StandData['config']>) => void;
+  onSelectPage?: (index: number) => void;
+  onAddPage?: () => void;
+  onDeletePage?: (index: number) => void;
+  onMoveTeacherToPage?: (teacherId: string, targetPageIndex: number) => void;
   isOpen: boolean;
   onClose: () => void;
 }
 
-type TabType = 'header' | 'head' | 'teachers' | 'schedule' | 'design';
+type TabType = 'pages' | 'teachers' | 'head' | 'header' | 'schedule' | 'design';
 
 interface CropState {
   type: 'teacher' | 'head';
@@ -52,18 +57,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onAddTeacher,
   onUpdateSchedule,
   onUpdateConfig,
+  onSelectPage,
+  onAddPage,
+  onDeletePage,
+  onMoveTeacherToPage,
   isOpen,
   onClose,
 }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('teachers');
+  const [activeTab, setActiveTab] = useState<TabType>('pages');
   const [cropState, setCropState] = useState<CropState | null>(null);
 
   if (!isOpen) return null;
 
-  const { header, headPerson, teachers, schedule, config } = data;
+  const { header, headPerson, schedule, config, pages = [], activePageIndex = 0 } = data;
+  const currentPage = pages[activePageIndex] || pages[0] || {
+    id: 'page-1',
+    name: 'Лист 1',
+    teachers: data.teachers,
+    showHeadPerson: true,
+    showSchedule: true,
+  };
+  const teachers = currentPage.teachers || [];
 
   const getTeacherSlotRatio = (id: string) => {
-    const el = document.getElementById(`person-card-photo-container-${id}`) || document.querySelector('[id^="person-card-photo-container-"]');
+    const el =
+      document.getElementById(`person-card-photo-container-${id}`) ||
+      document.querySelector('[id^="person-card-photo-container-"]');
     if (el) {
       const rect = el.getBoundingClientRect();
       if (rect.width > 0 && rect.height > 0) return rect.width / rect.height;
@@ -146,17 +165,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <>
       <aside
         id="stand-sidebar-panel"
-        className="relative z-30 h-full w-[420px] flex-shrink-0 bg-slate-900/95 backdrop-blur-xl border-l border-slate-700/80 shadow-2xl flex flex-col transition-all duration-300 animate-slideInRight"
+        className="relative z-30 h-full w-[430px] flex-shrink-0 bg-slate-900/95 backdrop-blur-xl border-l border-slate-700/80 shadow-2xl flex flex-col transition-all duration-300 animate-slideInRight"
       >
         {/* Sidebar Top Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-900/80">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-slate-900/80">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#7a0c22] flex items-center justify-center text-white font-bold text-sm shadow">
-              Ст
+            <div className="w-8 h-8 rounded-lg bg-[#bd1818] flex items-center justify-center text-white font-bold text-sm shadow">
+              ИЭУ
             </div>
             <div>
               <h2 className="text-sm font-bold text-white leading-none">Панель управления</h2>
-              <p className="text-[11px] text-slate-400 mt-1">Редактирование содержимого стенда</p>
+              <p className="text-[11px] text-slate-400 mt-1">Редактирование стенда кафедры</p>
             </div>
           </div>
           <button
@@ -169,38 +188,54 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex bg-slate-950/60 p-1.5 border-b border-slate-800 text-xs font-semibold gap-1">
+        <div className="grid grid-cols-6 bg-slate-950/70 p-1 border-b border-slate-800 text-[11px] font-semibold gap-0.5">
           <button
-            onClick={() => setActiveTab('teachers')}
-            className={`flex-1 py-1.5 px-2 rounded-lg font-bold flex flex-col items-center gap-1 transition-all ${
-              activeTab === 'teachers'
-                ? 'bg-[#7a0c22] text-white shadow'
+            onClick={() => setActiveTab('pages')}
+            className={`py-1.5 px-1 rounded-lg font-bold flex flex-col items-center gap-0.5 transition-all ${
+              activeTab === 'pages'
+                ? 'bg-[#bd1818] text-white shadow'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
             }`}
+            title="Страницы стенда"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>Листы</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('teachers')}
+            className={`py-1.5 px-1 rounded-lg font-bold flex flex-col items-center gap-0.5 transition-all ${
+              activeTab === 'teachers'
+                ? 'bg-[#bd1818] text-white shadow'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+            }`}
+            title="Преподаватели"
           >
             <Users className="w-3.5 h-3.5" />
-            <span>Преподаватели</span>
+            <span>Преподы</span>
           </button>
 
           <button
             onClick={() => setActiveTab('head')}
-            className={`flex-1 py-1.5 px-2 rounded-lg font-bold flex flex-col items-center gap-1 transition-all ${
+            className={`py-1.5 px-1 rounded-lg font-bold flex flex-col items-center gap-0.5 transition-all ${
               activeTab === 'head'
-                ? 'bg-[#7a0c22] text-white shadow'
+                ? 'bg-[#bd1818] text-white shadow'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
             }`}
+            title="Заведующий кафедрой"
           >
             <UserCheck className="w-3.5 h-3.5" />
-            <span>Завкафедры</span>
+            <span>Зав.</span>
           </button>
 
           <button
             onClick={() => setActiveTab('header')}
-            className={`flex-1 py-1.5 px-2 rounded-lg font-bold flex flex-col items-center gap-1 transition-all ${
+            className={`py-1.5 px-1 rounded-lg font-bold flex flex-col items-center gap-0.5 transition-all ${
               activeTab === 'header'
-                ? 'bg-[#7a0c22] text-white shadow'
+                ? 'bg-[#bd1818] text-white shadow'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
             }`}
+            title="Шапка стенда"
           >
             <GraduationCap className="w-3.5 h-3.5" />
             <span>Шапка</span>
@@ -208,11 +243,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           <button
             onClick={() => setActiveTab('schedule')}
-            className={`flex-1 py-1.5 px-2 rounded-lg font-bold flex flex-col items-center gap-1 transition-all ${
+            className={`py-1.5 px-1 rounded-lg font-bold flex flex-col items-center gap-0.5 transition-all ${
               activeTab === 'schedule'
-                ? 'bg-[#7a0c22] text-white shadow'
+                ? 'bg-[#bd1818] text-white shadow'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
             }`}
+            title="График работы"
           >
             <Clock className="w-3.5 h-3.5" />
             <span>График</span>
@@ -220,11 +256,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           <button
             onClick={() => setActiveTab('design')}
-            className={`flex-1 py-1.5 px-2 rounded-lg font-bold flex flex-col items-center gap-1 transition-all ${
+            className={`py-1.5 px-1 rounded-lg font-bold flex flex-col items-center gap-0.5 transition-all ${
               activeTab === 'design'
-                ? 'bg-[#7a0c22] text-white shadow'
+                ? 'bg-[#bd1818] text-white shadow'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
             }`}
+            title="Оформление и дизайн"
           >
             <Palette className="w-3.5 h-3.5" />
             <span>Дизайн</span>
@@ -233,20 +270,135 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Tab Content Area */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* --- TAB 1: TEACHERS LIST --- */}
+          {/* =========================================================================
+              TAB 0: PAGES / ЛИСТЫ СТЕНДА
+             ========================================================================= */}
+          {activeTab === 'pages' && (
+            <div className="space-y-4 text-xs">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-white">Страницы стенда</h3>
+                  <p className="text-[11px] text-slate-400">
+                    Всего листов: {pages.length}
+                  </p>
+                </div>
+                {onAddPage && (
+                  <button
+                    type="button"
+                    onClick={onAddPage}
+                    className="flex items-center gap-1.5 bg-[#bd1818] hover:bg-[#9e1010] text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Добавить лист</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Informative hint about schedule moving */}
+              <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700 text-[11px] text-slate-300 space-y-1">
+                <div className="font-bold text-amber-300">💡 Многостраничный стенд:</div>
+                <p className="text-slate-400 leading-relaxed">
+                  При создании новой страницы блок с расписанием автоматически переносится на неё, а на предыдущей освобождается место для дополнительных преподавателей.
+                </p>
+              </div>
+
+              {/* Pages Cards List */}
+              <div className="space-y-2.5">
+                {pages.map((p, idx) => {
+                  const isActive = activePageIndex === idx;
+                  return (
+                    <div
+                      key={p.id}
+                      className={`p-3 rounded-xl border transition-all ${
+                        isActive
+                          ? 'bg-slate-800/90 border-[#bd1818] shadow ring-1 ring-[#bd1818]/60'
+                          : 'bg-slate-900/90 border-slate-800 hover:border-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <button
+                          type="button"
+                          onClick={() => onSelectPage?.(idx)}
+                          className={`font-bold text-xs px-2.5 py-1 rounded-lg cursor-pointer flex items-center gap-2 ${
+                            isActive
+                              ? 'bg-[#bd1818] text-white shadow-xs'
+                              : 'bg-slate-800 text-slate-300 hover:text-white'
+                          }`}
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>{p.name}</span>
+                          {isActive && <span className="text-[10px] opacity-80">(Текущий)</span>}
+                        </button>
+
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-slate-400 text-[11px] font-mono">
+                            {p.teachers.length} преп.
+                          </span>
+                          {pages.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    `Удалить "${p.name}"? Преподаватели будут перемещены на Лист 1.`
+                                  )
+                                ) {
+                                  onDeletePage?.(idx);
+                                }
+                              }}
+                              className="p-1 hover:text-red-400 text-slate-500 hover:bg-slate-800 rounded transition-colors"
+                              title="Удалить этот лист"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Page composition badges */}
+                      <div className="flex items-center gap-2 pt-1 border-t border-slate-800 text-[10.5px]">
+                        <span
+                          className={`px-2 py-0.5 rounded font-medium ${
+                            p.showHeadPerson
+                              ? 'bg-rose-950/70 text-rose-300 border border-rose-800/50'
+                              : 'bg-slate-800/50 text-slate-500'
+                          }`}
+                        >
+                          {p.showHeadPerson ? '✓ Завкафедры' : '— Без завкафедры'}
+                        </span>
+                        <span
+                          className={`px-2 py-0.5 rounded font-medium ${
+                            p.showSchedule
+                              ? 'bg-amber-950/70 text-amber-300 border border-amber-800/50'
+                              : 'bg-slate-800/50 text-slate-500'
+                          }`}
+                        >
+                          {p.showSchedule ? '✓ Расписание' : '— Без расписания'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* =========================================================================
+              TAB 1: TEACHERS LIST
+             ========================================================================= */}
           {activeTab === 'teachers' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-bold text-white">Список преподавателей</h3>
                   <p className="text-[11px] text-slate-400">
-                    Всего на стенде: {teachers.length} персон
+                    На странице «{currentPage.name}»: {teachers.length} персон
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={onAddTeacher}
-                  className="flex items-center gap-1.5 bg-[#7a0c22] hover:bg-rose-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 bg-[#bd1818] hover:bg-[#9e1010] text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow transition-colors cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Добавить</span>
@@ -262,7 +414,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onClick={() => onUpdateConfig({ columnsCount: 0 })}
                     className={`px-2 py-1 rounded text-[11px] font-bold transition-colors ${
                       !config.columnsCount || config.columnsCount === 0
-                        ? 'bg-rose-600 text-white shadow'
+                        ? 'bg-[#bd1818] text-white shadow'
                         : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                     }`}
                     title="Автоматический расчет колонок под количество преподавателей без пустот"
@@ -276,7 +428,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       onClick={() => onUpdateConfig({ columnsCount: cols })}
                       className={`w-7 h-7 rounded font-bold transition-colors ${
                         config.columnsCount === cols
-                          ? 'bg-rose-600 text-white shadow'
+                          ? 'bg-[#bd1818] text-white shadow'
                           : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                       }`}
                     >
@@ -369,7 +521,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         >
                           <ChevronDown className="w-3.5 h-3.5" />
                         </button>
-                        {teachers.length > 1 && (
+                        {(teachers.length > 1 || pages.length > 1) && (
                           <button
                             type="button"
                             onClick={() => onDeleteTeacher(t.id)}
@@ -430,6 +582,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           className="w-full bg-slate-900 px-2.5 py-1.5 rounded-lg text-slate-300 text-xs border border-slate-700 focus:border-rose-500 focus:outline-none"
                         />
                       </div>
+
+                      {/* Move to another page if multiple pages exist */}
+                      {pages.length > 1 && (
+                        <div className="flex items-center gap-1.5 pt-1.5 border-t border-slate-800 text-[10px]">
+                          <span className="text-slate-400">Перенести на:</span>
+                          {pages.map((pg, pIdx) => {
+                            if (pIdx === activePageIndex) return null;
+                            return (
+                              <button
+                                key={pg.id}
+                                type="button"
+                                onClick={() => onMoveTeacherToPage?.(t.id, pIdx)}
+                                className="px-2 py-0.5 bg-slate-800 hover:bg-[#bd1818] text-slate-300 hover:text-white rounded border border-slate-700 transition-colors cursor-pointer"
+                              >
+                                {pg.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -437,13 +609,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
 
-          {/* --- TAB 2: HEAD OF DEPARTMENT --- */}
+          {/* =========================================================================
+              TAB 2: HEAD OF DEPARTMENT
+             ========================================================================= */}
           {activeTab === 'head' && (
-            <div className="space-y-4">
+            <div className="space-y-4 text-xs">
               <h3 className="text-sm font-bold text-white">Заведующий кафедрой</h3>
 
-              <div className="flex items-center gap-4 bg-slate-800/80 p-3.5 rounded-xl border border-slate-700">
-                <div className="relative group w-20 h-24 rounded-lg overflow-hidden bg-slate-700 flex items-center justify-center flex-shrink-0 border border-slate-600">
+              {/* Photo Upload and Recrop */}
+              <div className="flex items-center gap-3 bg-slate-800/80 p-3 rounded-xl border border-slate-700">
+                <div className="relative group w-16 h-20 rounded-lg bg-slate-700 overflow-hidden flex-shrink-0 flex items-center justify-center border border-slate-600">
                   {headPerson.photoUrl ? (
                     <img
                       src={headPerson.photoUrl}
@@ -451,11 +626,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span className="text-xs text-slate-400">Нет</span>
+                    <span className="text-xs text-slate-400">Нет фото</span>
                   )}
-                  <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center cursor-pointer text-[10px] text-white transition-opacity">
+                  <label className="absolute inset-0 bg-black/65 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center cursor-pointer text-[10px] text-white transition-opacity">
                     <Camera className="w-4 h-4 mb-0.5 text-rose-300" />
-                    <span>Фото</span>
+                    <span>Изменить</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -465,11 +640,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </label>
                 </div>
 
-                <div className="text-xs space-y-1.5 flex-1">
-                  <span className="font-bold text-rose-300 uppercase block">Главный портрет</span>
-                  <p className="text-slate-400 text-[11px] leading-tight">
-                    Отображается в левой доминантной колонке стенда.
-                  </p>
+                <div className="flex-1 space-y-1.5">
+                  <div className="font-bold text-slate-200">Фотопортрет завкафедрой</div>
+                  <div className="text-[11px] text-slate-400">
+                    Рекомендуется вертикальный портрет в хорошем качестве
+                  </div>
                   {headPerson.photoUrl && (
                     <button
                       type="button"
@@ -482,18 +657,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           slotName: 'Главный портрет (Завкафедры)',
                         })
                       }
-                      className="inline-flex items-center gap-1 text-xs text-rose-400 hover:text-rose-300 font-semibold cursor-pointer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-700 hover:bg-slate-600 text-rose-300 text-[11px] font-medium transition-colors"
                     >
                       <Crop className="w-3 h-3" />
-                      <span>Кадрировать фото</span>
+                      <span>Кадрировать</span>
                     </button>
                   )}
                 </div>
               </div>
 
-              <div className="space-y-3 text-xs">
+              {/* Text Fields */}
+              <div className="space-y-3">
                 <div>
-                  <label className="block text-slate-400 mb-1">Фамилия (капсом):</label>
+                  <label className="block text-slate-400 mb-1">Фамилия:</label>
                   <input
                     type="text"
                     value={headPerson.lastName}
@@ -526,7 +702,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-400 mb-1">Должность:</label>
+                  <label className="block text-slate-400 mb-1">Должность / статус:</label>
                   <input
                     type="text"
                     value={headPerson.role}
@@ -536,12 +712,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-400 mb-1">Ученая степень, звание:</label>
+                  <label className="block text-slate-400 mb-1">Ученая степень и звание:</label>
                   <textarea
+                    rows={2}
                     value={headPerson.degree}
                     onChange={(e) => onUpdateHeadPerson({ degree: e.target.value })}
-                    rows={2}
-                    className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 resize-none focus:border-rose-500 focus:outline-none"
+                    className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none resize-none"
                   />
                 </div>
 
@@ -558,7 +734,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <div>
                   <label className="block text-slate-400 mb-1">Email:</label>
                   <input
-                    type="email"
+                    type="text"
                     value={headPerson.email || ''}
                     onChange={(e) => onUpdateHeadPerson({ email: e.target.value })}
                     className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
@@ -568,186 +744,274 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
 
-          {/* --- TAB 3: HEADER (Шапка) --- */}
+          {/* =========================================================================
+              TAB 3: STAND HEADER
+             ========================================================================= */}
           {activeTab === 'header' && (
             <div className="space-y-4 text-xs">
               <h3 className="text-sm font-bold text-white">Шапка стенда</h3>
 
-              <div>
-                <label className="block text-slate-400 mb-1">Название университета:</label>
-                <input
-                  type="text"
-                  value={header.universityName}
-                  onChange={(e) => onUpdateHeader({ universityName: e.target.value })}
-                  className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1">Институт / Факультет:</label>
-                <input
-                  type="text"
-                  value={header.instituteName}
-                  onChange={(e) => onUpdateHeader({ instituteName: e.target.value })}
-                  className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1">Название кафедры:</label>
-                <input
-                  type="text"
-                  value={header.departmentName}
-                  onChange={(e) => onUpdateHeader({ departmentName: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white font-bold border border-slate-700 text-rose-300 focus:border-rose-500 focus:outline-none"
-                />
-              </div>
-
-              <div className="pt-2">
-                <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-slate-400 mb-1">Название университета:</label>
                   <input
-                    type="checkbox"
-                    checked={header.showLogo}
-                    onChange={(e) => onUpdateHeader({ showLogo: e.target.checked })}
-                    className="rounded text-rose-600 focus:ring-rose-500"
+                    type="text"
+                    value={header.universityName}
+                    onChange={(e) => onUpdateHeader({ universityName: e.target.value })}
+                    className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
                   />
-                  <span>Показывать эмблему/логотип</span>
-                </label>
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 mb-1">Институт / Факультет:</label>
+                  <input
+                    type="text"
+                    value={header.instituteName}
+                    onChange={(e) => onUpdateHeader({ instituteName: e.target.value })}
+                    className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 mb-1">Название кафедры:</label>
+                  <input
+                    type="text"
+                    value={header.departmentName}
+                    onChange={(e) =>
+                      onUpdateHeader({ departmentName: e.target.value.toUpperCase() })
+                    }
+                    className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white font-bold border border-slate-700 focus:border-rose-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="pt-2 border-t border-slate-800">
+                  <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={header.showLogo}
+                      onChange={(e) => onUpdateHeader({ showLogo: e.target.checked })}
+                      className="rounded text-rose-600 focus:ring-rose-500"
+                    />
+                    <span>Показывать герб / логотип университета</span>
+                  </label>
+                </div>
               </div>
             </div>
           )}
 
-          {/* --- TAB 4: SCHEDULE & CONTACTS --- */}
+          {/* =========================================================================
+              TAB 4: SCHEDULE & CONTACTS
+             ========================================================================= */}
           {activeTab === 'schedule' && (
             <div className="space-y-4 text-xs">
               <h3 className="text-sm font-bold text-white">График работы и контакты</h3>
 
-              <div>
-                <label className="block text-slate-400 mb-1">Аудитория:</label>
-                <input
-                  type="text"
-                  value={schedule.auditorium}
-                  onChange={(e) => onUpdateSchedule({ auditorium: e.target.value })}
-                  className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-3">
                 <div>
-                  <label className="block text-slate-400 mb-1">Дни (будни):</label>
+                  <label className="block text-slate-400 mb-1">Аудитория:</label>
                   <input
                     type="text"
-                    value={schedule.workDaysTitle}
-                    onChange={(e) => onUpdateSchedule({ workDaysTitle: e.target.value })}
-                    className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
+                    value={schedule.auditorium}
+                    onChange={(e) => onUpdateSchedule({ auditorium: e.target.value })}
+                    className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white font-bold border border-slate-700 focus:border-rose-500 focus:outline-none"
                   />
                 </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">Часы работы:</label>
-                  <input
-                    type="text"
-                    value={schedule.workDaysHours}
-                    onChange={(e) => onUpdateSchedule({ workDaysHours: e.target.value })}
-                    className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
-                  />
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-slate-400 mb-1">Пятница:</label>
-                  <input
-                    type="text"
-                    value={schedule.fridayTitle}
-                    onChange={(e) => onUpdateSchedule({ fridayTitle: e.target.value })}
-                    className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">Часы (ПТ):</label>
-                  <input
-                    type="text"
-                    value={schedule.fridayHours}
-                    onChange={(e) => onUpdateSchedule({ fridayHours: e.target.value })}
-                    className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-slate-400 mb-1">Обед:</label>
-                  <input
-                    type="text"
-                    value={schedule.lunchTitle}
-                    onChange={(e) => onUpdateSchedule({ lunchTitle: e.target.value })}
-                    className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">Время обеда:</label>
-                  <input
-                    type="text"
-                    value={schedule.lunchHours}
-                    onChange={(e) => onUpdateSchedule({ lunchHours: e.target.value })}
-                    className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1">Телефон кафедры:</label>
-                <input
-                  type="text"
-                  value={schedule.phone}
-                  onChange={(e) => onUpdateSchedule({ phone: e.target.value })}
-                  className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1">Email кафедры:</label>
-                <input
-                  type="text"
-                  value={schedule.email}
-                  onChange={(e) => onUpdateSchedule({ email: e.target.value })}
-                  className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
-                />
-              </div>
-
-              <div className="pt-2 border-t border-slate-800 space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer text-slate-300">
-                  <input
-                    type="checkbox"
-                    checked={schedule.showQr}
-                    onChange={(e) => onUpdateSchedule({ showQr: e.target.checked })}
-                    className="rounded text-rose-600 focus:ring-rose-500"
-                  />
-                  <span>Показывать QR-код кафедры</span>
-                </label>
-
-                {schedule.showQr && (
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-slate-400 mb-1">Ссылка для QR-кода:</label>
+                    <label className="block text-slate-400 mb-1">Дни (будни):</label>
                     <input
                       type="text"
-                      value={schedule.qrUrl}
-                      onChange={(e) => onUpdateSchedule({ qrUrl: e.target.value })}
-                      placeholder="https://..."
+                      value={schedule.workDaysTitle}
+                      onChange={(e) => onUpdateSchedule({ workDaysTitle: e.target.value })}
                       className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
                     />
                   </div>
-                )}
+                  <div>
+                    <label className="block text-slate-400 mb-1">Часы (будни):</label>
+                    <input
+                      type="text"
+                      value={schedule.workDaysHours}
+                      onChange={(e) => onUpdateSchedule({ workDaysHours: e.target.value })}
+                      className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-slate-400 mb-1">Пятница заголовок:</label>
+                    <input
+                      type="text"
+                      value={schedule.fridayTitle}
+                      onChange={(e) => onUpdateSchedule({ fridayTitle: e.target.value })}
+                      className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1">Пятница часы:</label>
+                    <input
+                      type="text"
+                      value={schedule.fridayHours}
+                      onChange={(e) => onUpdateSchedule({ fridayHours: e.target.value })}
+                      className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-slate-400 mb-1">Обед заголовок:</label>
+                    <input
+                      type="text"
+                      value={schedule.lunchTitle}
+                      onChange={(e) => onUpdateSchedule({ lunchTitle: e.target.value })}
+                      className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1">Обед часы:</label>
+                    <input
+                      type="text"
+                      value={schedule.lunchHours}
+                      onChange={(e) => onUpdateSchedule({ lunchHours: e.target.value })}
+                      className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 mb-1">Телефон кафедры:</label>
+                  <input
+                    type="text"
+                    value={schedule.phone}
+                    onChange={(e) => onUpdateSchedule({ phone: e.target.value })}
+                    className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 mb-1">Email кафедры:</label>
+                  <input
+                    type="text"
+                    value={schedule.email}
+                    onChange={(e) => onUpdateSchedule({ email: e.target.value })}
+                    className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="pt-2 border-t border-slate-800 space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={schedule.showQr}
+                      onChange={(e) => onUpdateSchedule({ showQr: e.target.checked })}
+                      className="rounded text-rose-600 focus:ring-rose-500"
+                    />
+                    <span>Показывать QR-код кафедры</span>
+                  </label>
+
+                  {schedule.showQr && (
+                    <div className="space-y-2">
+                      <div>
+                        <label className="block text-slate-400 mb-1">Ссылка для QR-кода:</label>
+                        <input
+                          type="text"
+                          value={schedule.qrUrl}
+                          onChange={(e) => onUpdateSchedule({ qrUrl: e.target.value })}
+                          placeholder="https://..."
+                          className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-400 mb-1">Подпись QR-кода:</label>
+                        <input
+                          type="text"
+                          value={schedule.qrLabel}
+                          onChange={(e) => onUpdateSchedule({ qrLabel: e.target.value })}
+                          placeholder="Сайт кафедры"
+                          className="w-full bg-slate-800 px-3 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
 
-          {/* --- TAB 5: DESIGN & PRINT --- */}
+          {/* =========================================================================
+              TAB 5: DESIGN & PRINT (Pattern settings & IEM Brand Red)
+             ========================================================================= */}
           {activeTab === 'design' && (
             <div className="space-y-4 text-xs">
-              <h3 className="text-sm font-bold text-white">Оформление и печать</h3>
+              <h3 className="text-sm font-bold text-white">Оформление и фирменный стиль</h3>
 
-              <div className="space-y-2">
+              {/* Exact IEM Brand Color Preset (#BD1818) */}
+              <div className="p-3 bg-slate-800/90 rounded-xl border border-slate-700 space-y-2">
+                <span className="block text-slate-300 font-bold">Фирменный цвет института:</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onUpdateConfig({
+                      primaryColor: '#BD1818',
+                      secondaryColor: '#9E1010',
+                      darkColor: '#6E0808',
+                      accentColor: '#E02626',
+                    })
+                  }
+                  className="w-full flex items-center justify-between p-2.5 rounded-lg bg-[#bd1818] hover:bg-[#9e1010] text-white font-bold transition-all shadow-md shadow-rose-950/60 border border-rose-400/40 cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center text-[#bd1818] text-xs font-black">
+                      ✓
+                    </div>
+                    <span>Красный ИЭУ 1 В 1 (#BD1818)</span>
+                  </div>
+                  <span className="font-mono text-xs text-rose-200 uppercase">ВолГУ</span>
+                </button>
+              </div>
+
+              {/* Pattern and Behind-Cards Ribbon Settings */}
+              <div className="p-3 bg-slate-800/90 rounded-xl border border-slate-700 space-y-3">
+                <span className="block text-slate-300 font-bold">Настройки узора:</span>
+
+                <div>
+                  <label className="block text-[11px] text-slate-400 mb-1.5">
+                    Заметность узора (заходит за карточки преподов):
+                  </label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(['subtle', 'normal', 'vibrant'] as const).map((intensity) => (
+                      <button
+                        key={intensity}
+                        type="button"
+                        onClick={() => onUpdateConfig({ patternIntensity: intensity })}
+                        className={`py-1.5 px-2 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                          (config.patternIntensity || 'vibrant') === intensity
+                            ? 'bg-[#bd1818] text-white shadow ring-1 ring-rose-400'
+                            : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-700'
+                        }`}
+                      >
+                        {intensity === 'subtle'
+                          ? 'Умеренный'
+                          : intensity === 'normal'
+                          ? 'Заметный'
+                          : 'Яркий (ИЭУ)'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={config.showCenterRibbons !== false}
+                    onChange={(e) => onUpdateConfig({ showCenterRibbons: e.target.checked })}
+                    className="rounded text-rose-600 focus:ring-rose-500"
+                  />
+                  <span>Волновой узор за карточками преподавателей</span>
+                </label>
+
                 <label className="flex items-center gap-2 cursor-pointer text-slate-300">
                   <input
                     type="checkbox"
@@ -755,7 +1019,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onChange={(e) => onUpdateConfig({ showWaveRibbons: e.target.checked })}
                     className="rounded text-rose-600 focus:ring-rose-500"
                   />
-                  <span>Плавные бордовые волны</span>
+                  <span>Плавные контурные волны и ленты</span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer text-slate-300">
@@ -768,16 +1032,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span>Точечные матрицы (dot matrix)</span>
                 </label>
 
-                <label className="flex items-center gap-2 cursor-pointer text-slate-300">
-                  <input
-                    type="checkbox"
-                    checked={config.showCropMarks}
-                    onChange={(e) => onUpdateConfig({ showCropMarks: e.target.checked })}
-                    className="rounded text-rose-600 focus:ring-rose-500"
-                  />
-                  <span>Типографские метки обреза (Crop marks)</span>
-                </label>
-
                 <label className="flex items-center gap-2 cursor-pointer text-amber-300 font-medium">
                   <input
                     type="checkbox"
@@ -785,10 +1039,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onChange={(e) => onUpdateConfig({ isFreeDragMode: e.target.checked })}
                     className="rounded text-amber-500 focus:ring-amber-400"
                   />
-                  <span>Режим свободного перемещения блоков</span>
+                  <span>Режим свободного перемещения карточек</span>
                 </label>
               </div>
 
+              {/* Print Advice Card */}
               <div className="p-3 bg-slate-800/80 rounded-xl border border-slate-700 space-y-2 text-[11px] text-slate-300">
                 <div className="flex items-center gap-1.5 font-bold text-white">
                   <Printer className="w-4 h-4 text-rose-400" />
@@ -797,7 +1052,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <ul className="list-disc list-inside space-y-1 text-slate-400">
                   <li>Стандартный ватман для стендов — формат А1 (841 × 594 мм).</li>
                   <li>При скачивании PNG формируется четкое изображение с высоким разрешением.</li>
-                  <li>Файл можно передать в любой копицентр или типографию для плоттерной печати.</li>
+                  <li>При наличии нескольких листов можно экспортировать каждый лист по отдельности.</li>
                 </ul>
               </div>
             </div>

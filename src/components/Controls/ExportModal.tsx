@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { Download, X, Loader2, AlertCircle, FileImage } from 'lucide-react';
+import { Download, X, Loader2, AlertCircle, FileImage, Layers } from 'lucide-react';
 import { exportStandToPng } from '../../utils/exportUtils';
-import { PaperFormat } from '../../types/stand';
+import { PaperFormat, StandPage } from '../../types/stand';
 
 interface ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
   departmentName: string;
   initialFormat?: PaperFormat;
+  pages?: StandPage[];
+  activePageIndex?: number;
+  onSelectPage?: (index: number) => void;
   onExportStart?: () => void;
   onExportEnd?: () => void;
 }
@@ -56,6 +59,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   onClose,
   departmentName,
   initialFormat = 'A1',
+  pages = [],
+  activePageIndex = 0,
+  onSelectPage,
   onExportStart,
   onExportEnd,
 }) => {
@@ -63,6 +69,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     ['A1', 'A2', 'A3', 'A4'].includes(initialFormat) ? initialFormat : 'A1'
   );
   const [qualityMode, setQualityMode] = useState<'standard' | 'high' | 'ultra'>('high');
+  const [exportScope, setExportScope] = useState<'current' | 'all'>('current');
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [progressStatus, setProgressStatus] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -80,8 +87,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const estimatedW = Math.round(1600 * currentMultiplier);
   const estimatedH = Math.round(1131 * currentMultiplier);
 
-  const cleanDeptName = departmentName ? departmentName.replace(/[^а-яА-Яa-zA-Z0-9]/g, '_') : 'Кафедра';
-  const defaultFileName = `Стенд_${cleanDeptName}_${selectedFormat}.png`;
+  const cleanDeptName = departmentName
+    ? departmentName.replace(/[^а-яА-Яa-zA-Z0-9]/g, '_')
+    : 'Кафедра';
 
   const handleStartExport = async () => {
     setIsExporting(true);
@@ -92,12 +100,45 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     await new Promise((resolve) => setTimeout(resolve, 150));
 
     try {
-      await exportStandToPng('department-stand-print-root', {
-        format: selectedFormat,
-        pixelRatio: currentMultiplier,
-        fileName: defaultFileName,
-        onProgress: (status) => setProgressStatus(status),
-      });
+      if (exportScope === 'all' && pages.length > 1) {
+        const originalPageIdx = activePageIndex;
+        for (let i = 0; i < pages.length; i++) {
+          setProgressStatus(
+            `Подготовка листа ${i + 1} из ${pages.length}: «${pages[i].name}»...`
+          );
+          onSelectPage?.(i);
+          await new Promise((resolve) => setTimeout(resolve, 350));
+
+          const pageFileName = `Стенд_${cleanDeptName}_${pages[i].name.replace(
+            /\s+/g,
+            '_'
+          )}_${selectedFormat}.png`;
+
+          await exportStandToPng('department-stand-print-root', {
+            format: selectedFormat,
+            pixelRatio: currentMultiplier,
+            fileName: pageFileName,
+            onProgress: (status) =>
+              setProgressStatus(`Лист ${i + 1}/${pages.length} (${pages[i].name}): ${status}`),
+          });
+
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
+        onSelectPage?.(originalPageIdx);
+      } else {
+        const curName = pages[activePageIndex] ? pages[activePageIndex].name : 'Лист_1';
+        const fileName =
+          pages.length > 1
+            ? `Стенд_${cleanDeptName}_${curName.replace(/\s+/g, '_')}_${selectedFormat}.png`
+            : `Стенд_${cleanDeptName}_${selectedFormat}.png`;
+
+        await exportStandToPng('department-stand-print-root', {
+          format: selectedFormat,
+          pixelRatio: currentMultiplier,
+          fileName,
+          onProgress: (status) => setProgressStatus(status),
+        });
+      }
 
       setTimeout(() => {
         setIsExporting(false);
@@ -119,21 +160,62 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         <button
           onClick={onClose}
           disabled={isExporting}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 transition-colors"
+          className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Modal Header */}
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#7a0c22] to-[#c41e3a] flex items-center justify-center shadow-lg shadow-rose-950/50">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#bd1818] to-[#e02626] flex items-center justify-center shadow-lg shadow-rose-950/50">
             <Download className="w-5 h-5 text-white" />
           </div>
           <div>
             <h3 className="font-bold text-base text-white">Экспорт стенда для печати</h3>
-            <p className="text-xs text-slate-400">Выберите формат бумаги и качество рендеринга</p>
+            <p className="text-xs text-slate-400">Формат бумаги, качество рендеринга и страницы</p>
           </div>
         </div>
+
+        {/* Optional Multi-Page Selection (if > 1 page) */}
+        {pages.length > 1 && (
+          <div className="space-y-2 mb-5 p-3 rounded-xl bg-slate-800/70 border border-slate-700">
+            <label className="flex items-center gap-2 text-xs font-bold text-slate-300 uppercase tracking-wider">
+              <Layers className="w-3.5 h-3.5 text-rose-400" />
+              <span>Выбор страниц для экспорта:</span>
+            </label>
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              <button
+                type="button"
+                onClick={() => setExportScope('current')}
+                disabled={isExporting}
+                className={`p-2.5 rounded-lg text-left border transition-all cursor-pointer ${
+                  exportScope === 'current'
+                    ? 'bg-[#bd1818]/30 border-rose-500 text-white ring-1 ring-rose-500'
+                    : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-600'
+                }`}
+              >
+                <div className="font-bold text-xs">
+                  Текущий лист ({pages[activePageIndex]?.name || 'Лист 1'})
+                </div>
+                <div className="text-[10px] text-slate-400">Скачать 1 файл</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setExportScope('all')}
+                disabled={isExporting}
+                className={`p-2.5 rounded-lg text-left border transition-all cursor-pointer ${
+                  exportScope === 'all'
+                    ? 'bg-[#bd1818]/30 border-rose-500 text-white ring-1 ring-rose-500'
+                    : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-600'
+                }`}
+              >
+                <div className="font-bold text-xs">Все листы ({pages.length} листа)</div>
+                <div className="text-[10px] text-rose-300">Скачать по очереди</div>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* 1. Format Selection (A1, A2, A3, A4) */}
         <div className="space-y-2.5 mb-5">
@@ -147,9 +229,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 type="button"
                 disabled={isExporting}
                 onClick={() => setSelectedFormat(f.id)}
-                className={`p-3 rounded-xl border text-left transition-all ${
+                className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                   selectedFormat === f.id
-                    ? 'bg-[#7a0c22]/40 border-rose-500 text-white shadow-md ring-1 ring-rose-500'
+                    ? 'bg-[#bd1818]/40 border-rose-500 text-white shadow-md ring-1 ring-rose-500'
                     : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:border-slate-600 hover:bg-slate-800'
                 }`}
               >
@@ -175,9 +257,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               type="button"
               disabled={isExporting}
               onClick={() => setQualityMode('standard')}
-              className={`p-2.5 rounded-xl border text-left transition-all ${
+              className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                 qualityMode === 'standard'
-                  ? 'bg-[#7a0c22]/40 border-rose-500 text-white shadow ring-1 ring-rose-500'
+                  ? 'bg-[#bd1818]/40 border-rose-500 text-white shadow ring-1 ring-rose-500'
                   : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:border-slate-600'
               }`}
             >
@@ -190,24 +272,24 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               type="button"
               disabled={isExporting}
               onClick={() => setQualityMode('high')}
-              className={`p-2.5 rounded-xl border text-left transition-all ${
+              className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                 qualityMode === 'high'
-                  ? 'bg-[#7a0c22]/40 border-rose-500 text-white shadow ring-1 ring-rose-500'
+                  ? 'bg-[#bd1818]/40 border-rose-500 text-white shadow ring-1 ring-rose-500'
                   : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:border-slate-600'
               }`}
             >
               <div className="font-bold text-xs text-rose-200">Высокое (300 DPI)</div>
               <div className="text-[10px] text-slate-300">Типографское</div>
-              <div className="text-[9px] text-rose-300 mt-0.5">Для плоттера/печати</div>
+              <div className="text-[9px] text-rose-300 mt-0.5">Для плоттера/ватмана</div>
             </button>
 
             <button
               type="button"
               disabled={isExporting}
               onClick={() => setQualityMode('ultra')}
-              className={`p-2.5 rounded-xl border text-left transition-all ${
+              className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                 qualityMode === 'ultra'
-                  ? 'bg-[#7a0c22]/40 border-rose-500 text-white shadow ring-1 ring-rose-500'
+                  ? 'bg-[#bd1818]/40 border-rose-500 text-white shadow ring-1 ring-rose-500'
                   : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:border-slate-600'
               }`}
             >
@@ -251,17 +333,21 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 px-4 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors"
+              className="flex-1 py-2.5 px-4 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors cursor-pointer"
             >
               Отмена
             </button>
             <button
               type="button"
               onClick={handleStartExport}
-              className="flex-[2] py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#7a0c22] via-[#9e1432] to-[#c41e3a] hover:from-[#92102b] hover:to-[#e11d48] text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-rose-950/50 flex items-center justify-center gap-2 transition-all cursor-pointer"
+              className="flex-[2] py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#bd1818] via-[#9e1010] to-[#e02626] hover:from-[#d91e1e] hover:to-[#ef2828] text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-rose-950/50 flex items-center justify-center gap-2 transition-all cursor-pointer"
             >
               <Download className="w-4 h-4" />
-              <span>Скачать PNG ({selectedFormat})</span>
+              <span>
+                {exportScope === 'all' && pages.length > 1
+                  ? `Скачать все листы (${pages.length})`
+                  : `Скачать PNG (${selectedFormat})`}
+              </span>
             </button>
           </div>
         )}

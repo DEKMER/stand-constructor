@@ -90,7 +90,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
           onClick={onToggleSidebar}
           className={`p-2 rounded-lg border transition-colors flex items-center gap-2 ${
             isSidebarOpen
-              ? 'bg-[#7a0c22] border-rose-500 text-white'
+              ? 'bg-[#bd1818] border-rose-500 text-white'
               : 'bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300'
           }`}
           title="Открыть/закрыть панель настроек"
@@ -100,7 +100,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
         </button>
 
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#7a0c22] to-[#c41e3a] flex items-center justify-center shadow">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#bd1818] to-[#e02626] flex items-center justify-center shadow">
             <Sparkles className="w-4 h-4 text-white" />
           </div>
           <div className="flex items-center gap-2">
@@ -221,7 +221,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
         <button
           onClick={onExportPng}
           disabled={isExporting}
-          className="flex items-center gap-2 bg-gradient-to-r from-[#7a0c22] via-[#9e1432] to-[#c41e3a] hover:from-[#92102b] hover:to-[#e11d48] text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-rose-950/50 hover:shadow-rose-900/60 border border-rose-500/40 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+          className="flex items-center gap-2 bg-gradient-to-r from-[#bd1818] via-[#9e1010] to-[#e02626] hover:from-[#d91e1e] hover:to-[#ef2828] text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-rose-950/50 hover:shadow-rose-900/60 border border-rose-500/40 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-wait"
         >
           <Download className="w-4 h-4" />
           <span>{isExporting ? 'Рендеринг...' : 'Скачать PNG для ватмана'}</span>

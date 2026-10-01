@@ -99,7 +99,7 @@ export const PersonCard: React.FC<PersonCardProps> = ({
         className={`group relative flex flex-col h-full bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 border overflow-hidden text-left p-2 justify-between cursor-grab active:cursor-grabbing ${
           isDragging ? 'opacity-30 scale-95 border-2 border-dashed border-rose-500' : ''
         } ${
-          isDropTarget ? 'ring-4 ring-[#7a0c22] border-[#7a0c22] bg-rose-50/70 shadow-2xl scale-[1.02]' : 'border-rose-100/90'
+          isDropTarget ? 'ring-4 ring-[#bd1818] border-[#bd1818] bg-rose-50/70 shadow-2xl scale-[1.02]' : 'border-rose-100/90'
         }`}
         title={isEditable ? 'Зажмите и перетащите мышью, чтобы поменять местами с другой карточкой' : undefined}
       >
@@ -255,10 +255,10 @@ export const PersonCard: React.FC<PersonCardProps> = ({
                 onChange={(e) => onUpdate({ lastName: e.target.value.toUpperCase() })}
                 onMouseDown={(e) => e.stopPropagation()}
                 placeholder="ФАМИЛИЯ"
-                className="font-surname font-black text-base xl:text-lg leading-tight text-[#7a0c22] border-b border-transparent hover:border-rose-300 focus:border-rose-600 focus:outline-none transition-colors w-full tracking-wide truncate bg-transparent"
+                className="font-surname font-black text-base xl:text-lg leading-tight text-[#bd1818] border-b border-transparent hover:border-rose-300 focus:border-rose-600 focus:outline-none transition-colors w-full tracking-wide truncate bg-transparent"
               />
             ) : (
-              <div className="font-surname font-black text-base xl:text-lg leading-tight text-[#7a0c22] tracking-wide truncate">
+              <div className="font-surname font-black text-base xl:text-lg leading-tight text-[#bd1818] tracking-wide truncate">
                 {teacher.lastName}
               </div>
             )}
@@ -292,7 +292,7 @@ export const PersonCard: React.FC<PersonCardProps> = ({
             </div>
 
             {/* Horizontal Red Accent Line */}
-            <div className="h-[2px] w-7 bg-[#c41e3a] my-0.5 rounded-full" />
+            <div className="h-[2px] w-7 bg-[#bd1818] my-0.5 rounded-full" />
           </div>
 
           {/* Position & Academic Rank / Degree */}
@@ -304,10 +304,10 @@ export const PersonCard: React.FC<PersonCardProps> = ({
                 onChange={(e) => onUpdate({ position: e.target.value })}
                 onMouseDown={(e) => e.stopPropagation()}
                 placeholder="должность, степень"
-                className="text-[9.5px] xl:text-[10px] font-bold uppercase tracking-wider text-[#9e1432] leading-tight border-b border-transparent hover:border-rose-300 focus:border-rose-600 focus:outline-none transition-colors w-full truncate bg-transparent"
+                className="text-[9.5px] xl:text-[10px] font-bold uppercase tracking-wider text-[#9e1010] leading-tight border-b border-transparent hover:border-rose-300 focus:border-rose-600 focus:outline-none transition-colors w-full truncate bg-transparent"
               />
             ) : (
-              <div className="text-[9.5px] xl:text-[10px] font-bold uppercase tracking-wider text-[#9e1432] leading-tight line-clamp-1">
+              <div className="text-[9.5px] xl:text-[10px] font-bold uppercase tracking-wider text-[#9e1010] leading-tight line-clamp-1">
                 {teacher.position}
               </div>
             )}

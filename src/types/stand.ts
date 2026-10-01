@@ -8,6 +8,9 @@ export interface Teacher {
   photoScale?: number;
   photoX?: number;
   photoY?: number;
+  x?: number; // Custom X in free placement mode
+  y?: number; // Custom Y in free placement mode
+  pageId?: string;
 }
 
 export interface DepartmentHead {
@@ -23,6 +26,8 @@ export interface DepartmentHead {
   receptionHours?: string;
   email?: string;
   phone?: string;
+  x?: number;
+  y?: number;
 }
 
 export interface ScheduleInfo {
@@ -38,6 +43,8 @@ export interface ScheduleInfo {
   qrUrl: string;
   qrLabel: string;
   showQr: boolean;
+  x?: number;
+  y?: number;
 }
 
 export interface HeaderInfo {
@@ -60,15 +67,27 @@ export type PaperFormat = 'A1' | 'A2' | 'A3' | 'A4' | 'A0' | '16:9' | '4:3';
 export interface StandConfig {
   paperFormat: PaperFormat;
   columnsCount: number; // 3, 4, 5, 6
-  primaryColor: string; // Burgundy #7A0C22
-  secondaryColor: string; // Crimson #981432
-  darkColor: string; // Deep Wine #4A0210
-  accentColor: string; // Vibrant Ruby #C41E3A
+  primaryColor: string; // Brand Red #BD1818 (ИЭУ)
+  secondaryColor: string; // Crimson #9E1010
+  darkColor: string; // Deep Wine #6E0808
+  accentColor: string; // Vibrant Ruby #E02626
   showDotMatrices: boolean;
   showWaveRibbons: boolean;
+  showCenterRibbons: boolean;
+  patternIntensity: 'subtle' | 'normal' | 'vibrant';
   showCropMarks: boolean;
   isFreeDragMode: boolean;
+  freeDragSnap: number;
   teacherCardHeight: 'compact' | 'normal' | 'large';
+}
+
+export interface StandPage {
+  id: string;
+  name: string;
+  teachers: Teacher[];
+  showHeadPerson: boolean;
+  showSchedule: boolean;
+  layout?: BlockLayout;
 }
 
 export interface StandData {
@@ -78,4 +97,6 @@ export interface StandData {
   schedule: ScheduleInfo;
   config: StandConfig;
   layout: BlockLayout;
+  pages: StandPage[];
+  activePageIndex: number;
 }

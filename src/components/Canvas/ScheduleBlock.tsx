@@ -16,7 +16,7 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
   isEditable = true,
 }) => {
   return (
-    <div className="relative flex flex-col justify-between h-full min-h-0 bg-gradient-to-br from-[#7a0c22] via-[#8c102a] to-[#580517] text-white rounded-xl p-3 shadow-xl border-2 border-rose-300/40 overflow-hidden text-left">
+    <div className="relative flex flex-col justify-between h-full min-h-0 bg-gradient-to-br from-[#bd1818] via-[#9e1010] to-[#6e0808] text-white rounded-xl p-3 shadow-xl border-2 border-rose-300/40 overflow-hidden text-left">
       {/* TOP SECTION: Auditorium & Schedule */}
       <div className="space-y-2">
         {/* Auditorium Badge */}
@@ -174,7 +174,7 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
             <QRCodeSVG
               value={schedule.qrUrl || 'https://volsu.ru'}
               size={48}
-              fgColor="#7a0c22"
+              fgColor="#bd1818"
               bgColor="#ffffff"
               level="M"
             />
