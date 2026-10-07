@@ -1,5 +1,5 @@
 import React, { forwardRef, useState, useRef } from 'react';
-import { StandData, StandPage, Teacher } from '../../types/stand';
+import { StandData, StandPage, Teacher, PaperFormat, PaperOrientation } from '../../types/stand';
 import { DecorativeWaves } from './DecorativeWaves';
 import { StandHeader } from './StandHeader';
 import { HeadPersonBlock } from './HeadPersonBlock';
@@ -14,6 +14,9 @@ import {
   Move,
   Sparkles,
   GripHorizontal,
+  RotateCcw,
+  RectangleHorizontal,
+  RectangleVertical,
 } from 'lucide-react';
 import { calculateStandLayout } from '../../utils/layoutUtils';
 
@@ -26,7 +29,10 @@ interface StandCanvasProps {
   onMoveTeacher: (from: number, to: number) => void;
   onAddTeacher: () => void;
   onUpdateSchedule: (patch: Partial<StandData['schedule']>) => void;
-  onUpdateLayout: (key: keyof StandData['layout'], pos: { x: number; y: number }) => void;
+  onUpdateLayout: (
+    key: keyof StandData['layout'],
+    pos: { x?: number; y?: number; width?: number; height?: number }
+  ) => void;
   onUpdateConfig: (patch: Partial<StandData['config']>) => void;
   // Page operations
   onSelectPage: (index: number) => void;
@@ -89,20 +95,66 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
       startY: number;
     } | null>(null);
 
-    // Aspect ratio dimensions for base A1 landscape (1600 x 1131 px)
+    // Free mode active resize tracking
+    interface ActiveResizeSession {
+      type: 'teacher' | 'head' | 'schedule' | 'canvas';
+      id?: string;
+      startMouseX: number;
+      startMouseY: number;
+      startWidth: number;
+      startHeight: number;
+    }
+    const [activeResizeId, setActiveResizeId] = useState<string | null>(null);
+    const resizeRef = useRef<ActiveResizeSession | null>(null);
+
+    // Aspect ratio dimensions for selected paper format and orientation
     const getCanvasDimensions = () => {
+      let w = 1600;
+      let h = 1131;
       switch (config.paperFormat) {
         case 'A0':
+          w = 2262;
+          h = 1600;
+          break;
         case 'A1':
+          w = 1600;
+          h = 1131;
+          break;
         case 'A2':
+          w = 1414;
+          h = 1000;
+          break;
         case 'A3':
+          w = 1200;
+          h = 848;
+          break;
         case 'A4':
-        default:
-          return { width: 1600, height: 1131 };
+          w = 1131;
+          h = 800;
+          break;
         case '16:9':
-          return { width: 1600, height: 900 };
+          w = 1600;
+          h = 900;
+          break;
         case '4:3':
-          return { width: 1600, height: 1200 };
+          w = 1600;
+          h = 1200;
+          break;
+        case 'custom':
+          w = config.customWidth && config.customWidth >= 300 ? config.customWidth : 1600;
+          h = config.customHeight && config.customHeight >= 300 ? config.customHeight : 1131;
+          break;
+        default:
+          w = 1600;
+          h = 1131;
+          break;
+      }
+
+      const isPortrait = config.orientation === 'portrait';
+      if (isPortrait) {
+        return { width: Math.min(w, h), height: Math.max(w, h) };
+      } else {
+        return { width: Math.max(w, h), height: Math.min(w, h) };
       }
     };
 
@@ -156,6 +208,83 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
     const cardWidthFree = Math.round(refColWidth);
     const cardHeightFree = Math.round(refRowHeight);
     const pinnedScheduleX = dims.width - 32 - cardWidthFree;
+
+    // Interactive mouse drag resizing for blocks & canvas in Free Mode
+    const handleStartResize = (
+      e: React.MouseEvent,
+      type: 'teacher' | 'head' | 'schedule' | 'canvas',
+      id: string | undefined,
+      startWidth: number,
+      startHeight: number
+    ) => {
+      if (!isEditable) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      const sessionKey = id ? `${type}-${id}` : type;
+      setActiveResizeId(sessionKey);
+
+      resizeRef.current = {
+        type,
+        id,
+        startMouseX: e.clientX,
+        startMouseY: e.clientY,
+        startWidth,
+        startHeight,
+      };
+
+      const handleMouseMove = (moveEvent: MouseEvent) => {
+        if (!resizeRef.current) return;
+        const currentZoom = zoom || 1;
+        const snap = config.freeDragSnap || 10;
+        const sess = resizeRef.current;
+
+        const deltaX = (moveEvent.clientX - sess.startMouseX) / currentZoom;
+        const deltaY = (moveEvent.clientY - sess.startMouseY) / currentZoom;
+
+        let nextW = Math.round(sess.startWidth + deltaX);
+        let nextH = Math.round(sess.startHeight + deltaY);
+
+        if (snap > 1 && sess.type !== 'canvas') {
+          nextW = Math.round(nextW / snap) * snap;
+          nextH = Math.round(nextH / snap) * snap;
+        }
+
+        if (sess.type === 'teacher' && sess.id) {
+          nextW = Math.max(140, Math.min(dims.width - 40, nextW));
+          nextH = Math.max(160, Math.min(activeSheetHeight - 80, nextH));
+          onUpdateTeacher(sess.id, { width: nextW, height: nextH });
+        } else if (sess.type === 'head') {
+          nextW = Math.max(180, Math.min(dims.width - 40, nextW));
+          nextH = Math.max(200, Math.min(activeSheetHeight - 80, nextH));
+          onUpdateHeadPerson({ width: nextW, height: nextH });
+          onUpdateLayout('headPerson', { width: nextW, height: nextH });
+        } else if (sess.type === 'schedule') {
+          nextW = Math.max(160, Math.min(dims.width - 40, nextW));
+          nextH = Math.max(180, Math.min(activeSheetHeight - 80, nextH));
+          onUpdateSchedule({ width: nextW, height: nextH });
+          onUpdateLayout('schedule', { width: nextW, height: nextH });
+        } else if (sess.type === 'canvas') {
+          nextW = Math.max(600, Math.min(4000, nextW));
+          nextH = Math.max(400, Math.min(4000, nextH));
+          onUpdateConfig({
+            paperFormat: 'custom',
+            customWidth: nextW,
+            customHeight: nextH,
+          });
+        }
+      };
+
+      const handleMouseUp = () => {
+        setActiveResizeId(null);
+        resizeRef.current = null;
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+      };
+
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    };
 
     // Grid mode drag reorder handlers
     const handleCardDragStart = (index: number) => {
@@ -346,8 +475,58 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
             </button>
           </div>
 
-          {/* Right: Layout Mode Switcher & Free Mode Tools */}
-          <div className="flex items-center gap-2">
+          {/* Right: Format, Orientation & Layout Mode Switcher */}
+          <div className="flex items-center flex-wrap gap-2">
+            {/* Quick Canvas Size & Orientation Controls */}
+            <div className="flex items-center gap-1.5 bg-slate-950/80 p-1 rounded-lg border border-slate-800 text-xs">
+              <select
+                value={config.paperFormat}
+                onChange={(e) => onUpdateConfig({ paperFormat: e.target.value as PaperFormat })}
+                className="bg-slate-800 text-slate-200 text-xs font-semibold px-2 py-1 rounded border border-slate-700 cursor-pointer focus:outline-none focus:border-rose-500"
+                title="Формат полотна"
+              >
+                <option value="A1">А1 Ватман</option>
+                <option value="A2">А2</option>
+                <option value="A3">А3</option>
+                <option value="A4">А4</option>
+                <option value="A0">А0</option>
+                <option value="16:9">16:9</option>
+                <option value="4:3">4:3</option>
+                <option value="custom">Свой размер</option>
+              </select>
+
+              <button
+                type="button"
+                onClick={() =>
+                  onUpdateConfig({
+                    orientation: config.orientation === 'portrait' ? 'landscape' : 'portrait',
+                  })
+                }
+                className={`p-1 px-2 rounded text-xs flex items-center gap-1 cursor-pointer transition-colors ${
+                  config.orientation === 'portrait'
+                    ? 'bg-amber-600/40 text-amber-200 border border-amber-500/50'
+                    : 'bg-slate-800 text-slate-300 hover:text-white border border-slate-700'
+                }`}
+                title="Переключить ориентацию (альбомная / книжная)"
+              >
+                {config.orientation === 'portrait' ? (
+                  <>
+                    <RectangleVertical className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="hidden sm:inline">Книжная</span>
+                  </>
+                ) : (
+                  <>
+                    <RectangleHorizontal className="w-3.5 h-3.5 text-slate-300" />
+                    <span className="hidden sm:inline">Альбомная</span>
+                  </>
+                )}
+              </button>
+
+              <span className="text-[10px] font-mono text-slate-400 px-1" title="Текущий размер полотна">
+                {dims.width}×{activeSheetHeight}px
+              </span>
+            </div>
+
             <div className="flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-800">
               <button
                 type="button"
@@ -371,7 +550,7 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
                     ? 'bg-amber-600 text-white shadow-sm ring-1 ring-amber-400'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
-                title="Свободный режим: свободно перемещайте карточки по холсту с узором"
+                title="Свободный режим: свободно перемещайте и масштабируйте карточки по холсту"
               >
                 <Move className="w-3.5 h-3.5" />
                 <span>Свободное перемещение</span>
@@ -611,24 +790,32 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
                     </div>
                   )}
 
-                  {/* 1. Head of Department Block in Free Mode */}
+                  {/* 1. Head of Department Block in Free Mode with manual sizing */}
                   {showHeadPerson && (
                     <div
                       style={{
                         position: 'absolute',
                         left: `${layout.headPerson?.x ?? 40}px`,
                         top: `${layout.headPerson?.y ?? 130}px`,
-                        width: '265px',
-                        height: showSchedule ? '580px' : '920px',
+                        width: `${headPerson.width ?? layout.headPerson?.width ?? 265}px`,
+                        height: `${headPerson.height ?? layout.headPerson?.height ?? (showSchedule ? 580 : 920)}px`,
                         zIndex: 20,
                       }}
+                      className="group/head block"
                     >
                       <MovableWrapper
                         id="block-head"
                         title="Заведующий кафедрой"
                         position={layout.headPerson}
                         onPositionChange={(pos) => onUpdateLayout('headPerson', pos)}
-                        onReset={() => onUpdateLayout('headPerson', { x: 40, y: 130 })}
+                        onReset={() =>
+                          onUpdateLayout('headPerson', {
+                            x: 40,
+                            y: 130,
+                            width: undefined,
+                            height: undefined,
+                          })
+                        }
                         isFreeDragMode={true}
                         zoom={zoom}
                         className="h-full"
@@ -640,20 +827,46 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
                           isEditable={isEditable}
                         />
                       </MovableWrapper>
+
+                      {/* Manual Resize Corner Handle for Head Person */}
+                      {isEditable && (
+                        <div
+                          onMouseDown={(e) =>
+                            handleStartResize(
+                              e,
+                              'head',
+                              undefined,
+                              headPerson.width ?? layout.headPerson?.width ?? 265,
+                              headPerson.height ??
+                                layout.headPerson?.height ??
+                                (showSchedule ? 580 : 920)
+                            )
+                          }
+                          title="Потяните, чтобы изменить размер карточки заведующего"
+                          className="no-print-export absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-slate-900 border-2 border-amber-400 rounded-full shadow-lg flex items-center justify-center cursor-nwse-resize hover:scale-125 z-40 transition-transform text-amber-300 select-none hover:bg-slate-800"
+                        >
+                          <svg className="w-3 h-3" viewBox="0 0 6 6" fill="currentColor">
+                            <circle cx="5" cy="5" r="1" />
+                            <circle cx="3" cy="5" r="1" />
+                            <circle cx="5" cy="3" r="1" />
+                          </svg>
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {/* 2. Schedule Block in Free Mode - Magnetized to right edge & uniform card size */}
+                  {/* 2. Schedule Block in Free Mode - Magnetized to right edge & manually resizable */}
                   {showSchedule && (
                     <div
                       style={{
                         position: 'absolute',
                         left: `${layout.schedule?.x ?? pinnedScheduleX}px`,
                         top: `${layout.schedule?.y ?? (showHeadPerson ? 730 : 130)}px`,
-                        width: `${cardWidthFree}px`,
-                        height: `${cardHeightFree}px`,
+                        width: `${schedule.width ?? layout.schedule?.width ?? cardWidthFree}px`,
+                        height: `${schedule.height ?? layout.schedule?.height ?? cardHeightFree}px`,
                         zIndex: 20,
                       }}
+                      className="group/schedule block"
                     >
                       <MovableWrapper
                         id="block-schedule"
@@ -668,6 +881,8 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
                           onUpdateLayout('schedule', {
                             x: pinnedScheduleX,
                             y: showHeadPerson ? 730 : 130,
+                            width: undefined,
+                            height: undefined,
                           })
                         }
                         isFreeDragMode={true}
@@ -681,19 +896,44 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
                           isEditable={isEditable}
                         />
                       </MovableWrapper>
+
+                      {/* Manual Resize Corner Handle for Schedule */}
+                      {isEditable && (
+                        <div
+                          onMouseDown={(e) =>
+                            handleStartResize(
+                              e,
+                              'schedule',
+                              undefined,
+                              schedule.width ?? layout.schedule?.width ?? cardWidthFree,
+                              schedule.height ?? layout.schedule?.height ?? cardHeightFree
+                            )
+                          }
+                          title="Потяните, чтобы изменить размер блока расписания"
+                          className="no-print-export absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-slate-900 border-2 border-amber-400 rounded-full shadow-lg flex items-center justify-center cursor-nwse-resize hover:scale-125 z-40 transition-transform text-amber-300 select-none hover:bg-slate-800"
+                        >
+                          <svg className="w-3 h-3" viewBox="0 0 6 6" fill="currentColor">
+                            <circle cx="5" cy="5" r="1" />
+                            <circle cx="3" cy="5" r="1" />
+                            <circle cx="5" cy="3" r="1" />
+                          </svg>
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {/* 3. Freely Positioned Teacher Cards */}
+                  {/* 3. Freely Positioned & Resizable Teacher Cards */}
                   {currentTeachers.map((t, idx) => {
-                    // Fallback coordinates if not yet set
                     const startX = showHeadPerson ? 320 : 40;
                     const maxCols = showHeadPerson ? 5 : refColsCount;
                     const defaultX = startX + (idx % maxCols) * (cardWidthFree + GRID_GAP);
                     const defaultY = 130 + Math.floor(idx / maxCols) * (cardHeightFree + GRID_GAP);
                     const posX = t.x ?? defaultX;
                     const posY = t.y ?? defaultY;
+                    const cardW = t.width ?? cardWidthFree;
+                    const cardH = t.height ?? cardHeightFree;
                     const isDraggingThis = activeFreeDragId === t.id;
+                    const isResizingThis = activeResizeId === `teacher-${t.id}`;
 
                     return (
                       <div
@@ -702,27 +942,42 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
                           position: 'absolute',
                           left: `${posX}px`,
                           top: `${posY}px`,
-                          width: `${cardWidthFree}px`,
-                          height: `${cardHeightFree}px`,
-                          zIndex: isDraggingThis ? 50 : 15,
+                          width: `${cardW}px`,
+                          height: `${cardH}px`,
+                          zIndex: isDraggingThis || isResizingThis ? 50 : 15,
                         }}
                         onMouseDown={(e) => handleStartFreeDrag(e, t.id, posX, posY)}
                         className={`transition-shadow ${
-                          isDraggingThis
-                            ? 'shadow-2xl ring-3 ring-[#bd1818] cursor-grabbing scale-[1.02]'
+                          isDraggingThis || isResizingThis
+                            ? 'shadow-2xl ring-3 ring-[#bd1818] cursor-grabbing scale-[1.01]'
                             : 'cursor-grab'
                         }`}
                       >
-                        {/* Drag Handle Bar in Free Mode (Hidden in print) */}
+                        {/* Drag & Size Info Handle Bar in Free Mode */}
                         {isEditable && (
                           <div className="no-print-export absolute -top-5 left-0 right-0 z-30 flex items-center justify-between bg-slate-900/90 text-amber-200 px-2 py-0.5 rounded-t text-[10px] font-bold border border-amber-500/40">
-                            <span className="flex items-center gap-1">
-                              <GripHorizontal className="w-3 h-3 text-amber-400" />
-                              <span>{t.lastName || 'Преподаватель'}</span>
+                            <span className="flex items-center gap-1 truncate max-w-[120px]">
+                              <GripHorizontal className="w-3 h-3 text-amber-400 flex-shrink-0" />
+                              <span className="truncate">{t.lastName || 'Преподаватель'}</span>
                             </span>
-                            <span className="font-mono text-[9px] text-slate-400">
-                              {posX},{posY}
-                            </span>
+                            <div className="flex items-center gap-1.5 font-mono text-[9px] text-slate-400">
+                              <span>
+                                {cardW}×{cardH}
+                              </span>
+                              {(t.width || t.height) && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onUpdateTeacher(t.id, { width: undefined, height: undefined });
+                                  }}
+                                  title="Сбросить к стандартному размеру"
+                                  className="text-amber-400 hover:text-white p-0.5 cursor-pointer"
+                                >
+                                  <RotateCcw className="w-2.5 h-2.5" />
+                                </button>
+                              )}
+                            </div>
                           </div>
                         )}
 
@@ -736,6 +991,23 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
                           activePageIndex={activePageIndex}
                           onMoveToPage={(target) => onMoveTeacherToPage(t.id, target)}
                         />
+
+                        {/* Interactive Corner Resize Handle for Teacher Card */}
+                        {isEditable && (
+                          <div
+                            onMouseDown={(e) =>
+                              handleStartResize(e, 'teacher', t.id, cardW, cardH)
+                            }
+                            title="Потяните угол, чтобы изменить размер карточки"
+                            className="no-print-export absolute -bottom-1.5 -right-1.5 w-5 h-5 bg-slate-900 border-2 border-amber-400 rounded-full shadow-md flex items-center justify-center cursor-nwse-resize hover:scale-125 z-40 transition-transform text-amber-300 select-none hover:bg-slate-800"
+                          >
+                            <svg className="w-2.5 h-2.5" viewBox="0 0 6 6" fill="currentColor">
+                              <circle cx="5" cy="5" r="1" />
+                              <circle cx="3" cy="5" r="1" />
+                              <circle cx="5" cy="3" r="1" />
+                            </svg>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -760,6 +1032,19 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
                 </div>
               )}
             </div>
+
+            {/* Interactive Canvas/Poster Resize Handle at Bottom-Right in Free Mode */}
+            {config.isFreeDragMode && isEditable && (
+              <div
+                onMouseDown={(e) =>
+                  handleStartResize(e, 'canvas', undefined, dims.width, activeSheetHeight)
+                }
+                title="Потяните угол, чтобы свободно изменить размер полотна (холста)"
+                className="no-print-export absolute -bottom-3 -right-3 w-8 h-8 bg-slate-950 border-2 border-amber-400 rounded-lg shadow-2xl flex items-center justify-center cursor-nwse-resize hover:scale-110 z-50 text-amber-300 group hover:bg-slate-900 transition-transform"
+              >
+                <Move className="w-4 h-4 group-hover:rotate-45 transition-transform text-amber-400" />
+              </div>
+            )}
           </div>
         </div>
       </div>

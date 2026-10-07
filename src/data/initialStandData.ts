@@ -199,7 +199,8 @@ export const initialStandData: StandData = {
   },
   config: {
     paperFormat: 'A1',
-    columnsCount: 0, // 0 = Auto layout
+    orientation: 'landscape',
+    columnsCount: 0, // 0 = Auto layout (6 cols base)
     primaryColor: '#BD1818', // IEM Brand Red 1-in-1
     secondaryColor: '#9E1010',
     darkColor: '#6E0808',
@@ -223,7 +224,7 @@ export const initialStandData: StandData = {
     {
       id: 'page-1',
       name: 'Лист 1',
-      teachers: initialTeachersList,
+      teachers: initialTeachersList.slice(0, 13),
       showHeadPerson: true,
       showSchedule: true,
       layout: {

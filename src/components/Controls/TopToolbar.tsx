@@ -13,6 +13,8 @@ import {
   FileUp,
   Layers,
   Sparkles,
+  RectangleHorizontal,
+  RectangleVertical,
 } from 'lucide-react';
 
 interface TopToolbarProps {
@@ -120,8 +122,8 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
         <select
           value={config.paperFormat}
           onChange={(e) => onUpdateConfig({ paperFormat: e.target.value as PaperFormat })}
-          className="bg-slate-800 text-xs font-semibold px-2 py-1.5 rounded-lg border border-slate-700 text-slate-200 focus:outline-none focus:border-rose-500"
-          title="Формат бумаги для печати"
+          className="bg-slate-800 text-xs font-semibold px-2 py-1.5 rounded-lg border border-slate-700 text-slate-200 focus:outline-none focus:border-rose-500 cursor-pointer"
+          title="Формат бумаги для печати / полотна"
         >
           <option value="A1">Ватман А1 (841×594 мм)</option>
           <option value="A2">Ватман А2 (594×420 мм)</option>
@@ -130,7 +132,62 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
           <option value="A0">Ватман А0 (1189×841 мм)</option>
           <option value="16:9">Экран 16:9</option>
           <option value="4:3">Экран 4:3</option>
+          <option value="custom">Свой размер (Custom)</option>
         </select>
+
+        {/* Orientation Toggle (Landscape / Portrait) */}
+        <div className="flex items-center bg-slate-900 rounded-lg p-0.5 border border-slate-700">
+          <button
+            type="button"
+            onClick={() => onUpdateConfig({ orientation: 'landscape' })}
+            className={`p-1.5 rounded text-xs flex items-center gap-1 cursor-pointer transition-all ${
+              (config.orientation || 'landscape') === 'landscape'
+                ? 'bg-[#bd1818] text-white shadow-xs font-bold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Альбомная ориентация (горизонтально)"
+          >
+            <RectangleHorizontal className="w-3.5 h-3.5" />
+            <span className="text-[11px] hidden md:inline">Альбомная</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onUpdateConfig({ orientation: 'portrait' })}
+            className={`p-1.5 rounded text-xs flex items-center gap-1 cursor-pointer transition-all ${
+              config.orientation === 'portrait'
+                ? 'bg-[#bd1818] text-white shadow-xs font-bold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Книжная ориентация (вертикально)"
+          >
+            <RectangleVertical className="w-3.5 h-3.5" />
+            <span className="text-[11px] hidden md:inline">Книжная</span>
+          </button>
+        </div>
+
+        {/* Custom Width x Height inputs if custom format */}
+        {config.paperFormat === 'custom' && (
+          <div className="flex items-center gap-1 text-[11px] font-mono text-slate-300 bg-slate-900 px-2 py-1 rounded-lg border border-slate-700">
+            <input
+              type="number"
+              value={config.customWidth || 1600}
+              onChange={(e) => onUpdateConfig({ customWidth: Math.max(300, Number(e.target.value)) })}
+              className="w-14 bg-slate-800 px-1 py-0.5 rounded text-center border border-slate-600 text-white focus:outline-none focus:border-rose-500"
+              placeholder="Ширина"
+              title="Ширина в px"
+            />
+            <span className="text-slate-400">×</span>
+            <input
+              type="number"
+              value={config.customHeight || 1131}
+              onChange={(e) => onUpdateConfig({ customHeight: Math.max(300, Number(e.target.value)) })}
+              className="w-14 bg-slate-800 px-1 py-0.5 rounded text-center border border-slate-600 text-white focus:outline-none focus:border-rose-500"
+              placeholder="Высота"
+              title="Высота в px"
+            />
+            <span className="text-[10px] text-slate-400">px</span>
+          </div>
+        )}
 
         <div className="h-5 w-[1px] bg-slate-800 mx-1" />
 

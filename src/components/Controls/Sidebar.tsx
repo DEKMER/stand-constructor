@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StandData, Teacher } from '../../types/stand';
+import { StandData, Teacher, PaperFormat, PaperOrientation } from '../../types/stand';
 import {
   GraduationCap,
   UserCheck,
@@ -15,6 +15,9 @@ import {
   Camera,
   Crop,
   FileText,
+  RectangleHorizontal,
+  RectangleVertical,
+  Maximize2,
 } from 'lucide-react';
 import { ImageCropModal } from './ImageCropModal';
 
@@ -971,7 +974,111 @@ export const Sidebar: React.FC<SidebarProps> = ({
              ========================================================================= */}
           {activeTab === 'design' && (
             <div className="space-y-4 text-xs">
-              <h3 className="text-sm font-bold text-white">Оформление и фирменный стиль</h3>
+              <h3 className="text-sm font-bold text-white">Оформление и формат стенда</h3>
+
+              {/* Canvas Format and Orientation Controls */}
+              <div className="p-3 bg-slate-800/90 rounded-xl border border-slate-700 space-y-3">
+                <span className="block text-slate-300 font-bold">Формат и размер полотна:</span>
+
+                <div>
+                  <label className="block text-[11px] text-slate-400 mb-1">Формат бумаги:</label>
+                  <select
+                    value={config.paperFormat}
+                    onChange={(e) => onUpdateConfig({ paperFormat: e.target.value as PaperFormat })}
+                    className="w-full bg-slate-900 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-700 text-slate-200 focus:outline-none focus:border-rose-500 cursor-pointer"
+                  >
+                    <option value="A1">Ватман А1 (841×594 мм, стандарт)</option>
+                    <option value="A2">Ватман А2 (594×420 мм)</option>
+                    <option value="A3">Формат А3 (420×297 мм)</option>
+                    <option value="A4">Формат А4 (297×210 мм)</option>
+                    <option value="A0">Ватман А0 (1189×841 мм)</option>
+                    <option value="16:9">Экран 16:9 (1920×1080)</option>
+                    <option value="4:3">Экран 4:3 (1600×1200)</option>
+                    <option value="custom">Пользовательский (свой размер)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] text-slate-400 mb-1">Ориентация:</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onUpdateConfig({ orientation: 'landscape' })}
+                      className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                        (config.orientation || 'landscape') === 'landscape'
+                          ? 'bg-[#bd1818] text-white shadow ring-1 ring-rose-400'
+                          : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-700'
+                      }`}
+                    >
+                      <RectangleHorizontal className="w-4 h-4" />
+                      <span>Горизонтальная (альбомная)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onUpdateConfig({ orientation: 'portrait' })}
+                      className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                        config.orientation === 'portrait'
+                          ? 'bg-[#bd1818] text-white shadow ring-1 ring-rose-400'
+                          : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-700'
+                      }`}
+                    >
+                      <RectangleVertical className="w-4 h-4" />
+                      <span>Вертикальная (книжная)</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Presets (A4, A1) */}
+                <div>
+                  <span className="block text-[10.5px] text-slate-400 mb-1">Быстрый выбор для печати:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => onUpdateConfig({ paperFormat: 'A4', orientation: 'portrait' })}
+                      className="px-2 py-1 bg-slate-900 hover:bg-slate-700 border border-slate-700 rounded text-[10.5px] font-semibold text-slate-300 hover:text-white transition-colors cursor-pointer"
+                    >
+                      📄 А4 Вертикально
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onUpdateConfig({ paperFormat: 'A4', orientation: 'landscape' })}
+                      className="px-2 py-1 bg-slate-900 hover:bg-slate-700 border border-slate-700 rounded text-[10.5px] font-semibold text-slate-300 hover:text-white transition-colors cursor-pointer"
+                    >
+                      📄 А4 Горизонтально
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onUpdateConfig({ paperFormat: 'A1', orientation: 'landscape' })}
+                      className="px-2 py-1 bg-slate-900 hover:bg-slate-700 border border-slate-700 rounded text-[10.5px] font-semibold text-slate-300 hover:text-white transition-colors cursor-pointer"
+                    >
+                      📐 Ватман А1
+                    </button>
+                  </div>
+                </div>
+
+                {config.paperFormat === 'custom' && (
+                  <div className="pt-2 border-t border-slate-700 grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10.5px] text-slate-400 mb-1">Ширина (px):</label>
+                      <input
+                        type="number"
+                        value={config.customWidth || 1600}
+                        onChange={(e) => onUpdateConfig({ customWidth: Math.max(300, Number(e.target.value)) })}
+                        className="w-full bg-slate-900 px-2.5 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10.5px] text-slate-400 mb-1">Высота (px):</label>
+                      <input
+                        type="number"
+                        value={config.customHeight || 1131}
+                        onChange={(e) => onUpdateConfig({ customHeight: Math.max(300, Number(e.target.value)) })}
+                        className="w-full bg-slate-900 px-2.5 py-1.5 rounded-lg text-white border border-slate-700 focus:border-rose-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Exact IEM Brand Color Preset (#BD1818) */}
               <div className="p-3 bg-slate-800/90 rounded-xl border border-slate-700 space-y-2">

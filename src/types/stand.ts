@@ -10,6 +10,8 @@ export interface Teacher {
   photoY?: number;
   x?: number; // Custom X in free placement mode
   y?: number; // Custom Y in free placement mode
+  width?: number; // Custom width in free placement mode
+  height?: number; // Custom height in free placement mode
   pageId?: string;
 }
 
@@ -28,6 +30,8 @@ export interface DepartmentHead {
   phone?: string;
   x?: number;
   y?: number;
+  width?: number;
+  height?: number;
 }
 
 export interface ScheduleInfo {
@@ -45,6 +49,8 @@ export interface ScheduleInfo {
   showQr: boolean;
   x?: number;
   y?: number;
+  width?: number;
+  height?: number;
 }
 
 export interface HeaderInfo {
@@ -56,17 +62,21 @@ export interface HeaderInfo {
 }
 
 export interface BlockLayout {
-  header: { x: number; y: number };
-  headPerson: { x: number; y: number; width?: number };
-  facultyGrid: { x: number; y: number; width?: number };
-  schedule: { x: number; y: number; width?: number };
+  header: { x: number; y: number; width?: number; height?: number };
+  headPerson: { x: number; y: number; width?: number; height?: number };
+  facultyGrid: { x: number; y: number; width?: number; height?: number };
+  schedule: { x: number; y: number; width?: number; height?: number };
 }
 
-export type PaperFormat = 'A1' | 'A2' | 'A3' | 'A4' | 'A0' | '16:9' | '4:3';
+export type PaperFormat = 'A1' | 'A2' | 'A3' | 'A4' | 'A0' | '16:9' | '4:3' | 'custom';
+export type PaperOrientation = 'landscape' | 'portrait';
 
 export interface StandConfig {
   paperFormat: PaperFormat;
-  columnsCount: number; // 3, 4, 5, 6
+  orientation?: PaperOrientation; // 'landscape' | 'portrait'
+  customWidth?: number;
+  customHeight?: number;
+  columnsCount: number; // 0 = Auto, or 3..8
   primaryColor: string; // Brand Red #BD1818 (ИЭУ)
   secondaryColor: string; // Crimson #9E1010
   darkColor: string; // Deep Wine #6E0808

@@ -287,13 +287,19 @@ export const App: React.FC = () => {
     }));
   };
 
-  // Layout coordinates update
-  const handleUpdateLayout = (key: keyof StandData['layout'], pos: { x: number; y: number }) => {
+  // Layout coordinates and sizing update
+  const handleUpdateLayout = (
+    key: keyof StandData['layout'],
+    pos: { x?: number; y?: number; width?: number; height?: number }
+  ) => {
     setData((prev) => ({
       ...prev,
       layout: {
         ...prev.layout,
-        [key]: pos,
+        [key]: {
+          ...prev.layout[key],
+          ...pos,
+        },
       },
     }));
   };
