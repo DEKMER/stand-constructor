@@ -97,6 +97,11 @@ export interface StandPage {
   teachers: Teacher[];
   showHeadPerson: boolean;
   showSchedule: boolean;
+  isFreeDragMode?: boolean;
+  paperFormat?: PaperFormat;
+  orientation?: PaperOrientation;
+  customWidth?: number;
+  customHeight?: number;
   layout?: BlockLayout;
 }
 

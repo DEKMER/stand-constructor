@@ -18,6 +18,7 @@ import {
   RectangleHorizontal,
   RectangleVertical,
   Maximize2,
+  Move,
 } from 'lucide-react';
 import { ImageCropModal } from './ImageCropModal';
 
@@ -32,7 +33,11 @@ interface SidebarProps {
   onUpdateSchedule: (patch: Partial<StandData['schedule']>) => void;
   onUpdateConfig: (patch: Partial<StandData['config']>) => void;
   onSelectPage?: (index: number) => void;
-  onAddPage?: () => void;
+  onAddPage?: (options?: {
+    isFreeDragMode?: boolean;
+    paperFormat?: PaperFormat;
+    orientation?: PaperOrientation;
+  }) => void;
   onDeletePage?: (index: number) => void;
   onMoveTeacherToPage?: (teacherId: string, targetPageIndex: number) => void;
   isOpen: boolean;
@@ -286,14 +291,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </p>
                 </div>
                 {onAddPage && (
-                  <button
-                    type="button"
-                    onClick={onAddPage}
-                    className="flex items-center gap-1.5 bg-[#bd1818] hover:bg-[#9e1010] text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow transition-colors cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Добавить лист</span>
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => onAddPage({ isFreeDragMode: false })}
+                      className="flex items-center gap-1 bg-[#bd1818] hover:bg-[#9e1010] text-white text-xs font-bold px-2 py-1.5 rounded-lg shadow transition-colors cursor-pointer"
+                      title="Добавить лист с авто-сеткой"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>+ Сетка</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onAddPage({ isFreeDragMode: true })}
+                      className="flex items-center gap-1 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-2 py-1.5 rounded-lg shadow transition-colors cursor-pointer"
+                      title="Добавить лист со свободным перемещением (окно полотна строго фиксировано под формат независимо от числа преподавателей)"
+                    >
+                      <Move className="w-3.5 h-3.5" />
+                      <span>+ Свободный</span>
+                    </button>
+                  </div>
                 )}
               </div>
 

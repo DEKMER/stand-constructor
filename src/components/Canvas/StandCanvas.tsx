@@ -36,8 +36,13 @@ interface StandCanvasProps {
   onUpdateConfig: (patch: Partial<StandData['config']>) => void;
   // Page operations
   onSelectPage: (index: number) => void;
-  onAddPage: () => void;
+  onAddPage: (options?: {
+    isFreeDragMode?: boolean;
+    paperFormat?: PaperFormat;
+    orientation?: PaperOrientation;
+  }) => void;
   onDeletePage: (index: number) => void;
+  onUpdatePage?: (pageIndex: number, patch: Partial<StandPage>) => void;
   onMoveTeacherToPage: (teacherId: string, targetPageIndex: number) => void;
   zoom: number;
   isEditable?: boolean;
@@ -59,6 +64,7 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
       onSelectPage,
       onAddPage,
       onDeletePage,
+      onUpdatePage,
       onMoveTeacherToPage,
       zoom,
       isEditable = true,
@@ -80,6 +86,15 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
     const currentTeachers = currentPage.teachers || [];
     const showHeadPerson = currentPage.showHeadPerson;
     const showSchedule = currentPage.showSchedule;
+
+    // Per-page format, orientation, and placement mode
+    const activeFormat: PaperFormat = currentPage.paperFormat || config.paperFormat || 'A1';
+    const activeOrientation: PaperOrientation =
+      currentPage.orientation || config.orientation || 'landscape';
+    const isPageFreeMode =
+      currentPage.isFreeDragMode !== undefined
+        ? currentPage.isFreeDragMode
+        : config.isFreeDragMode;
 
     // Grid mode drag & drop reorder states
     const [draggedTeacherIdx, setDraggedTeacherIdx] = useState<number | null>(null);
@@ -111,7 +126,7 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
     const getCanvasDimensions = () => {
       let w = 1600;
       let h = 1131;
-      switch (config.paperFormat) {
+      switch (activeFormat) {
         case 'A0':
           w = 2262;
           h = 1600;
@@ -141,8 +156,10 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
           h = 1200;
           break;
         case 'custom':
-          w = config.customWidth && config.customWidth >= 300 ? config.customWidth : 1600;
-          h = config.customHeight && config.customHeight >= 300 ? config.customHeight : 1131;
+          const cw = currentPage.customWidth || config.customWidth;
+          const ch = currentPage.customHeight || config.customHeight;
+          w = cw && cw >= 300 ? cw : 1600;
+          h = ch && ch >= 300 ? ch : 1131;
           break;
         default:
           w = 1600;
@@ -150,7 +167,7 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
           break;
       }
 
-      const isPortrait = config.orientation === 'portrait';
+      const isPortrait = activeOrientation === 'portrait';
       if (isPortrait) {
         return { width: Math.min(w, h), height: Math.max(w, h) };
       } else {
@@ -201,13 +218,20 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
     const adaptedGridHeight = currentRowsCount * refRowHeight + (currentRowsCount - 1) * GRID_GAP;
     const adaptedSheetHeight = Math.round(adaptedGridHeight + HEADER_OVERHEAD);
 
-    // Active sheet height: Page 1 stays full poster, Page 2+ adapts dynamically!
-    const activeSheetHeight = isNewPage ? adaptedSheetHeight : dims.height;
+    // IMPORTANT:
+    // In Free Mode, sheet height ALWAYS matches the selected paper format (dims.height)
+    // EXACTLY, regardless of the number of teachers (0, 1, or 20+)!
+    // In Grid Mode: Page 1 stays full poster, Page 2+ adapts dynamically unless fixed format is chosen
+    const activeSheetHeight = isPageFreeMode
+      ? dims.height
+      : isNewPage
+      ? adaptedSheetHeight
+      : dims.height;
 
     // Magnetic right edge position for schedule in Free Mode (and grid)
-    const cardWidthFree = Math.round(refColWidth);
-    const cardHeightFree = Math.round(refRowHeight);
-    const pinnedScheduleX = dims.width - 32 - cardWidthFree;
+    const cardWidthFree = Math.min(320, Math.max(200, Math.round(refColWidth)));
+    const cardHeightFree = Math.min(380, Math.max(260, Math.round(refRowHeight)));
+    const pinnedScheduleX = Math.max(20, dims.width - 32 - cardWidthFree);
 
     // Interactive mouse drag resizing for blocks & canvas in Free Mode
     const handleStartResize = (
@@ -430,9 +454,17 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
                     >
                       {p.teachers.length} преп.
                     </span>
+                    {p.isFreeDragMode && (
+                      <span
+                        className="text-[9.5px] bg-amber-500/25 text-amber-200 border border-amber-500/40 px-1 py-0.2 rounded font-semibold"
+                        title="Лист со свободным перемещением"
+                      >
+                        Свободный
+                      </span>
+                    )}
                     {p.showSchedule && (
                       <span
-                        className="text-[9.5px] bg-amber-400/25 text-amber-200 border border-amber-400/40 px-1 py-0.2 rounded font-semibold"
+                        className="text-[9.5px] bg-rose-500/25 text-rose-200 border border-rose-500/40 px-1 py-0.2 rounded font-semibold"
                         title="Блок расписания кафедры на этой странице"
                       >
                         Расписание
@@ -463,27 +495,43 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
               );
             })}
 
-            {/* Add New Page Button */}
-            <button
-              type="button"
-              onClick={onAddPage}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800/90 hover:bg-[#bd1818]/25 hover:border-rose-500 border border-dashed border-slate-600 text-rose-300 transition-all cursor-pointer shadow-xs"
-              title="Добавить новый лист (блок с расписанием автоматически переносится на него)"
-            >
-              <Plus className="w-4 h-4 text-rose-400" />
-              <span>Добавить страницу</span>
-            </button>
+            {/* Add New Page Buttons: Grid vs Free placement */}
+            <div className="flex items-center gap-1.5 ml-1">
+              <button
+                type="button"
+                onClick={() => onAddPage({ isFreeDragMode: false })}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800/90 hover:bg-[#bd1818]/25 hover:border-rose-500 border border-dashed border-slate-600 text-rose-300 transition-all cursor-pointer shadow-xs"
+                title="Добавить страницу с авто-сеткой"
+              >
+                <Plus className="w-3.5 h-3.5 text-rose-400" />
+                <span>+ Лист (сетка)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onAddPage({ isFreeDragMode: true })}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-amber-950/40 hover:bg-amber-900/60 border border-dashed border-amber-500/60 text-amber-300 transition-all cursor-pointer shadow-xs"
+                title="Добавить страницу со свободным перемещением (окно полотна строго фиксировано под выбранный формат A4/A1 независимо от числа преподавателей)"
+              >
+                <Move className="w-3.5 h-3.5 text-amber-400" />
+                <span>+ Свободный лист</span>
+              </button>
+            </div>
           </div>
 
           {/* Right: Format, Orientation & Layout Mode Switcher */}
           <div className="flex items-center flex-wrap gap-2">
-            {/* Quick Canvas Size & Orientation Controls */}
+            {/* Quick Canvas Size & Orientation Controls (Synced with current page) */}
             <div className="flex items-center gap-1.5 bg-slate-950/80 p-1 rounded-lg border border-slate-800 text-xs">
               <select
-                value={config.paperFormat}
-                onChange={(e) => onUpdateConfig({ paperFormat: e.target.value as PaperFormat })}
+                value={activeFormat}
+                onChange={(e) => {
+                  const fmt = e.target.value as PaperFormat;
+                  onUpdateConfig({ paperFormat: fmt });
+                  if (onUpdatePage) onUpdatePage(activePageIndex, { paperFormat: fmt });
+                }}
                 className="bg-slate-800 text-slate-200 text-xs font-semibold px-2 py-1 rounded border border-slate-700 cursor-pointer focus:outline-none focus:border-rose-500"
-                title="Формат полотна"
+                title="Формат полотна для текущей страницы"
               >
                 <option value="A1">А1 Ватман</option>
                 <option value="A2">А2</option>
@@ -497,19 +545,19 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
 
               <button
                 type="button"
-                onClick={() =>
-                  onUpdateConfig({
-                    orientation: config.orientation === 'portrait' ? 'landscape' : 'portrait',
-                  })
-                }
+                onClick={() => {
+                  const nextOrientation = activeOrientation === 'portrait' ? 'landscape' : 'portrait';
+                  onUpdateConfig({ orientation: nextOrientation });
+                  if (onUpdatePage) onUpdatePage(activePageIndex, { orientation: nextOrientation });
+                }}
                 className={`p-1 px-2 rounded text-xs flex items-center gap-1 cursor-pointer transition-colors ${
-                  config.orientation === 'portrait'
+                  activeOrientation === 'portrait'
                     ? 'bg-amber-600/40 text-amber-200 border border-amber-500/50'
                     : 'bg-slate-800 text-slate-300 hover:text-white border border-slate-700'
                 }`}
                 title="Переключить ориентацию (альбомная / книжная)"
               >
-                {config.orientation === 'portrait' ? (
+                {activeOrientation === 'portrait' ? (
                   <>
                     <RectangleVertical className="w-3.5 h-3.5 text-amber-400" />
                     <span className="hidden sm:inline">Книжная</span>
@@ -522,7 +570,7 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
                 )}
               </button>
 
-              <span className="text-[10px] font-mono text-slate-400 px-1" title="Текущий размер полотна">
+              <span className="text-[10px] font-mono text-slate-400 px-1" title="Размер полотна (фиксирован в свободном режиме независимо от числа преподов)">
                 {dims.width}×{activeSheetHeight}px
               </span>
             </div>
@@ -530,9 +578,12 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
             <div className="flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-800">
               <button
                 type="button"
-                onClick={() => onUpdateConfig({ isFreeDragMode: false })}
+                onClick={() => {
+                  onUpdateConfig({ isFreeDragMode: false });
+                  if (onUpdatePage) onUpdatePage(activePageIndex, { isFreeDragMode: false });
+                }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                  !config.isFreeDragMode
+                  !isPageFreeMode
                     ? 'bg-[#bd1818] text-white shadow-sm'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
@@ -544,20 +595,23 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
 
               <button
                 type="button"
-                onClick={() => onUpdateConfig({ isFreeDragMode: true })}
+                onClick={() => {
+                  onUpdateConfig({ isFreeDragMode: true });
+                  if (onUpdatePage) onUpdatePage(activePageIndex, { isFreeDragMode: true });
+                }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                  config.isFreeDragMode
+                  isPageFreeMode
                     ? 'bg-amber-600 text-white shadow-sm ring-1 ring-amber-400'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
-                title="Свободный режим: свободно перемещайте и масштабируйте карточки по холсту"
+                title="Свободный режим: свободно перемещайте и масштабируйте карточки, полотно строго зафиксировано под формат"
               >
                 <Move className="w-3.5 h-3.5" />
                 <span>Свободное перемещение</span>
               </button>
             </div>
 
-            {config.isFreeDragMode && (
+            {isPageFreeMode && (
               <button
                 type="button"
                 onClick={handleAutoAlignFreeCards}
@@ -625,7 +679,7 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
               position={layout.header}
               onPositionChange={(pos) => onUpdateLayout('header', pos)}
               onReset={() => onUpdateLayout('header', { x: 0, y: 0 })}
-              isFreeDragMode={config.isFreeDragMode}
+              isFreeDragMode={isPageFreeMode}
               zoom={zoom}
             >
               <StandHeader
@@ -638,7 +692,7 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
 
             {/* --- MAIN CONTENT AREA --- */}
             <div className="relative z-10 flex-1 min-h-0 px-8 pb-3 pt-1 flex flex-col justify-between overflow-hidden">
-              {!config.isFreeDragMode ? (
+              {!isPageFreeMode ? (
                 /* =========================================================================
                    MODE 1: DYNAMIC ADAPTIVE GRID (Adapts rows and cols, zero empty voids)
                    ========================================================================= */
@@ -795,8 +849,8 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
                     <div
                       style={{
                         position: 'absolute',
-                        left: `${layout.headPerson?.x ?? 40}px`,
-                        top: `${layout.headPerson?.y ?? 130}px`,
+                        left: `${(layout.headPerson?.x && layout.headPerson.x > 0) ? layout.headPerson.x : 40}px`,
+                        top: `${(layout.headPerson?.y && layout.headPerson.y > 0) ? layout.headPerson.y : 130}px`,
                         width: `${headPerson.width ?? layout.headPerson?.width ?? 265}px`,
                         height: `${headPerson.height ?? layout.headPerson?.height ?? (showSchedule ? 580 : 920)}px`,
                         zIndex: 20,
@@ -860,8 +914,8 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
                     <div
                       style={{
                         position: 'absolute',
-                        left: `${layout.schedule?.x ?? pinnedScheduleX}px`,
-                        top: `${layout.schedule?.y ?? (showHeadPerson ? 730 : 130)}px`,
+                        left: `${(layout.schedule?.x && layout.schedule.x > 0) ? layout.schedule.x : pinnedScheduleX}px`,
+                        top: `${(layout.schedule?.y && layout.schedule.y > 0) ? layout.schedule.y : (showHeadPerson ? 730 : 130)}px`,
                         width: `${schedule.width ?? layout.schedule?.width ?? cardWidthFree}px`,
                         height: `${schedule.height ?? layout.schedule?.height ?? cardHeightFree}px`,
                         zIndex: 20,
@@ -1034,7 +1088,7 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
             </div>
 
             {/* Interactive Canvas/Poster Resize Handle at Bottom-Right in Free Mode */}
-            {config.isFreeDragMode && isEditable && (
+            {isPageFreeMode && isEditable && (
               <div
                 onMouseDown={(e) =>
                   handleStartResize(e, 'canvas', undefined, dims.width, activeSheetHeight)

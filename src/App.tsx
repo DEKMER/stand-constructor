@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { StandData, StandPage, Teacher, StandConfig, HeaderInfo, DepartmentHead, ScheduleInfo } from './types/stand';
+import { StandData, StandPage, Teacher, StandConfig, HeaderInfo, DepartmentHead, ScheduleInfo, PaperFormat, PaperOrientation } from './types/stand';
 import { initialStandData } from './data/initialStandData';
 import { loadStandFromStorage, saveStandToStorage, exportProjectToJson, importProjectFromJson } from './utils/storageUtils';
 import { StandCanvas } from './components/Canvas/StandCanvas';
@@ -76,16 +76,28 @@ export const App: React.FC = () => {
   };
 
   // Add new page: schedule moves to newly added page, leaving previous pages free for more teachers
-  const handleAddPage = () => {
+  const handleAddPage = (options?: {
+    isFreeDragMode?: boolean;
+    paperFormat?: PaperFormat;
+    orientation?: PaperOrientation;
+  }) => {
     setData((prev) => {
       const newIndex = prev.pages.length;
       const newPageNumber = newIndex + 1;
+      const isFree =
+        options?.isFreeDragMode !== undefined
+          ? options.isFreeDragMode
+          : prev.config.isFreeDragMode;
+
       const newPage: StandPage = {
         id: `page-${Date.now()}`,
         name: `Лист ${newPageNumber}`,
         teachers: [],
         showHeadPerson: false,
         showSchedule: true, // Schedule automatically moves to the new page!
+        isFreeDragMode: isFree,
+        paperFormat: options?.paperFormat || prev.config.paperFormat,
+        orientation: options?.orientation || prev.config.orientation || 'landscape',
         layout: {
           header: { x: 0, y: 0 },
           headPerson: { x: 0, y: 0 },
@@ -103,6 +115,23 @@ export const App: React.FC = () => {
         pages: allPages,
         activePageIndex: newIndex,
         teachers: [],
+        config: {
+          ...prev.config,
+          isFreeDragMode: isFree,
+          paperFormat: newPage.paperFormat || prev.config.paperFormat,
+          orientation: newPage.orientation || prev.config.orientation,
+        },
+      };
+    });
+  };
+
+  // Update specific page properties (e.g. isFreeDragMode, paperFormat, orientation)
+  const handleUpdatePage = (pageIndex: number, patch: Partial<StandPage>) => {
+    setData((prev) => {
+      const newPages = prev.pages.map((p, idx) => (idx === pageIndex ? { ...p, ...patch } : p));
+      return {
+        ...prev,
+        pages: newPages,
       };
     });
   };
@@ -365,6 +394,7 @@ export const App: React.FC = () => {
             onSelectPage={handleSelectPage}
             onAddPage={handleAddPage}
             onDeletePage={handleDeletePage}
+            onUpdatePage={handleUpdatePage}
             onMoveTeacherToPage={handleMoveTeacherToPage}
             zoom={zoom}
             isEditable={!isExporting}
