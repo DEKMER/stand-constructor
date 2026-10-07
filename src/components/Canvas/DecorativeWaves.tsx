@@ -3,9 +3,10 @@ import { StandConfig } from '../../types/stand';
 
 interface DecorativeWavesProps {
   config: StandConfig;
+  sheetHeight?: number;
 }
 
-export const DecorativeWaves: React.FC<DecorativeWavesProps> = ({ config }) => {
+export const DecorativeWaves: React.FC<DecorativeWavesProps> = ({ config, sheetHeight }) => {
   if (!config.showWaveRibbons) return null;
 
   const {
@@ -17,6 +18,11 @@ export const DecorativeWaves: React.FC<DecorativeWavesProps> = ({ config }) => {
     showCenterRibbons = true,
     patternIntensity = 'vibrant',
   } = config;
+
+  // Proportional height scaling for adapted multi-page sheets
+  const heightRatio = Math.min(1, (sheetHeight || 1131) / 1131);
+  const topWaveHeight = Math.max(90, Math.round(220 * heightRatio));
+  const bottomWaveHeight = Math.max(70, Math.round(155 * heightRatio));
 
   // Multiplier for opacities based on pattern intensity
   const opacityMult = patternIntensity === 'vibrant' ? 1.0 : patternIntensity === 'subtle' ? 0.55 : 0.8;
@@ -112,7 +118,8 @@ export const DecorativeWaves: React.FC<DecorativeWavesProps> = ({ config }) => {
           2. TOP HEADER WAVES (Screenshot 2 Style with exact IEM #BD1818 depth)
          ========================================================================= */}
       <svg
-        className="absolute top-0 left-0 w-full h-[220px]"
+        style={{ height: `${topWaveHeight}px` }}
+        className="absolute top-0 left-0 w-full pointer-events-none"
         viewBox="0 0 1600 220"
         fill="none"
         preserveAspectRatio="none"
@@ -176,7 +183,8 @@ export const DecorativeWaves: React.FC<DecorativeWavesProps> = ({ config }) => {
           3. BOTTOM CORNER WAVES (Rising dynamic crests)
          ========================================================================= */}
       <svg
-        className="absolute bottom-0 left-0 w-full h-[155px] pointer-events-none"
+        style={{ height: `${bottomWaveHeight}px` }}
+        className="absolute bottom-0 left-0 w-full pointer-events-none"
         viewBox="0 0 1600 155"
         fill="none"
         preserveAspectRatio="none"

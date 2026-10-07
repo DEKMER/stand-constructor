@@ -107,10 +107,55 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
     };
 
     const dims = getCanvasDimensions();
+
+    // Baseline reference layout from Sheet 1 (pages[0]) to lock uniform card dimensions across all pages
+    const page1 = pages && pages[0] ? pages[0] : null;
+    const page1TeachersCount = page1?.teachers?.length ?? 15;
+    const page1Plan = calculateStandLayout(page1TeachersCount, config.columnsCount, {
+      showHeadPerson: page1?.showHeadPerson ?? true,
+      showSchedule: page1?.showSchedule ?? true,
+    });
+
+    const refColsCount = page1Plan.colsCount || 6;
+    const refRowsCount = page1Plan.rowsCount || 3;
+    const isNewPage = activePageIndex > 0;
+
     const layoutPlan = calculateStandLayout(currentTeachers.length, config.columnsCount, {
       showHeadPerson,
       showSchedule,
+      referenceColumns: refColsCount,
+      referenceRows: refRowsCount,
+      isNewPage,
     });
+
+    // Uniform card and sheet adaptation geometry:
+    // Header outer height (~92px) + content container padding (16px) = ~108-110px
+    const HEADER_OVERHEAD = 110;
+    const GRID_GAP = 10;
+
+    // Available width for columns inside px-8 padding (32px left + 32px right = 64px)
+    const usableWidth = dims.width - 64;
+    const refColWidth = (usableWidth - (refColsCount - 1) * GRID_GAP) / refColsCount;
+
+    // Usable grid height on Sheet 1 (A1 poster height - header overhead)
+    const refUsableGridHeight = Math.max(300, dims.height - HEADER_OVERHEAD);
+    const refRowHeight = Math.max(
+      240,
+      (refUsableGridHeight - (refRowsCount - 1) * GRID_GAP) / refRowsCount
+    );
+
+    // Dynamic adaptation for Page 2+: height matches the actual number of rows needed
+    const currentRowsCount = layoutPlan.rowsCount;
+    const adaptedGridHeight = currentRowsCount * refRowHeight + (currentRowsCount - 1) * GRID_GAP;
+    const adaptedSheetHeight = Math.round(adaptedGridHeight + HEADER_OVERHEAD);
+
+    // Active sheet height: Page 1 stays full poster, Page 2+ adapts dynamically!
+    const activeSheetHeight = isNewPage ? adaptedSheetHeight : dims.height;
+
+    // Magnetic right edge position for schedule in Free Mode (and grid)
+    const cardWidthFree = Math.round(refColWidth);
+    const cardHeightFree = Math.round(refRowHeight);
+    const pinnedScheduleX = dims.width - 32 - cardWidthFree;
 
     // Grid mode drag reorder handlers
     const handleCardDragStart = (index: number) => {
@@ -143,11 +188,11 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
       const snap = config.freeDragSnap || 10;
       const startX = showHeadPerson ? 320 : 40;
       const startY = 130;
-      const cardW = 235;
-      const cardH = 305;
-      const gapX = 18;
-      const gapY = 15;
-      const maxCols = showHeadPerson ? 5 : 6;
+      const cardW = cardWidthFree;
+      const cardH = cardHeightFree;
+      const gapX = GRID_GAP;
+      const gapY = GRID_GAP;
+      const maxCols = showHeadPerson ? 5 : refColsCount;
 
       currentTeachers.forEach((t, i) => {
         const col = i % maxCols;
@@ -162,9 +207,8 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
         onUpdateLayout('headPerson', { x: 40, y: 130 });
       }
       if (showSchedule) {
-        const scheduleX = showHeadPerson ? 40 : 1600 - 320;
-        const scheduleY = showHeadPerson ? 740 : dims.height - 380;
-        onUpdateLayout('schedule', { x: scheduleX, y: scheduleY });
+        const scheduleY = isNewPage ? 130 : showHeadPerson ? 730 : dims.height - 380;
+        onUpdateLayout('schedule', { x: pinnedScheduleX, y: scheduleY });
       }
     };
 
@@ -207,8 +251,8 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
         }
 
         // Constrain within poster boundaries
-        nextX = Math.max(10, Math.min(dims.width - 245, nextX));
-        nextY = Math.max(120, Math.min(dims.height - 320, nextY));
+        nextX = Math.max(10, Math.min(dims.width - cardWidthFree - 10, nextX));
+        nextY = Math.max(120, Math.min(activeSheetHeight - cardHeightFree - 10, nextY));
 
         onUpdateTeacher(teacherId, { x: nextX, y: nextY });
       };
@@ -345,6 +389,18 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
                 <span>Выровнять по сетке</span>
               </button>
             )}
+
+            {isEditable && (
+              <button
+                type="button"
+                onClick={onAddTeacher}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-[#bd1818] hover:bg-[#9e1010] text-white transition-all cursor-pointer shadow-xs ml-1"
+                title="Добавить преподавателя на эту страницу"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Преподаватель</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -362,15 +418,15 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
             id="department-stand-print-root"
             style={{
               width: `${dims.width}px`,
-              minHeight: `${dims.height}px`,
-              height: `${dims.height}px`,
+              minHeight: `${activeSheetHeight}px`,
+              height: `${activeSheetHeight}px`,
             }}
             className="relative bg-gradient-to-b from-[#ffffff] via-[#fffbfb] to-[#faf3f4] text-slate-900 shadow-2xl overflow-hidden border border-slate-300 rounded-xs flex flex-col justify-between"
           >
             {/* =========================================================================
                 PROMINENT DECORATIVE WAVES & RIBBONS (Flows behind teacher cards)
                ========================================================================= */}
-            <DecorativeWaves config={config} />
+            <DecorativeWaves config={config} sheetHeight={activeSheetHeight} />
 
             {/* Professional Crop Marks for Plotter (Optional) */}
             {config.showCropMarks && (
@@ -411,8 +467,10 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
                   style={{
                     display: 'grid',
                     gridTemplateColumns: `repeat(${layoutPlan.colsCount}, minmax(0, 1fr))`,
-                    gridTemplateRows: `repeat(${layoutPlan.rowsCount}, minmax(0, 1fr))`,
-                    gap: '10px',
+                    gridTemplateRows: isNewPage
+                      ? `repeat(${layoutPlan.rowsCount}, ${refRowHeight}px)`
+                      : `repeat(${layoutPlan.rowsCount}, minmax(0, 1fr))`,
+                    gap: `${GRID_GAP}px`,
                   }}
                   className="flex-1 min-h-0 w-full h-full"
                 >
@@ -478,6 +536,9 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
                             e.preventDefault();
                             handleCardDrop(idx);
                           }}
+                          pages={pages}
+                          activePageIndex={activePageIndex}
+                          onMoveToPage={(target) => onMoveTeacherToPage(t.id, target)}
                         />
                       </div>
                     );
@@ -582,15 +643,15 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
                     </div>
                   )}
 
-                  {/* 2. Schedule Block in Free Mode */}
+                  {/* 2. Schedule Block in Free Mode - Magnetized to right edge & uniform card size */}
                   {showSchedule && (
                     <div
                       style={{
                         position: 'absolute',
-                        left: `${layout.schedule?.x ?? (showHeadPerson ? 40 : 1280)}px`,
-                        top: `${layout.schedule?.y ?? (showHeadPerson ? 730 : 740)}px`,
-                        width: '265px',
-                        height: '350px',
+                        left: `${layout.schedule?.x ?? pinnedScheduleX}px`,
+                        top: `${layout.schedule?.y ?? (showHeadPerson ? 730 : 130)}px`,
+                        width: `${cardWidthFree}px`,
+                        height: `${cardHeightFree}px`,
                         zIndex: 20,
                       }}
                     >
@@ -598,11 +659,15 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
                         id="block-schedule"
                         title="График работы и контакты"
                         position={layout.schedule}
-                        onPositionChange={(pos) => onUpdateLayout('schedule', pos)}
+                        onPositionChange={(pos) => {
+                          const isNearRight = Math.abs(pos.x - pinnedScheduleX) < 50;
+                          const nextX = isNearRight ? pinnedScheduleX : pos.x;
+                          onUpdateLayout('schedule', { x: nextX, y: pos.y });
+                        }}
                         onReset={() =>
                           onUpdateLayout('schedule', {
-                            x: showHeadPerson ? 40 : 1280,
-                            y: showHeadPerson ? 730 : 740,
+                            x: pinnedScheduleX,
+                            y: showHeadPerson ? 730 : 130,
                           })
                         }
                         isFreeDragMode={true}
@@ -623,9 +688,9 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
                   {currentTeachers.map((t, idx) => {
                     // Fallback coordinates if not yet set
                     const startX = showHeadPerson ? 320 : 40;
-                    const maxCols = showHeadPerson ? 5 : 6;
-                    const defaultX = startX + (idx % maxCols) * 252;
-                    const defaultY = 130 + Math.floor(idx / maxCols) * 320;
+                    const maxCols = showHeadPerson ? 5 : refColsCount;
+                    const defaultX = startX + (idx % maxCols) * (cardWidthFree + GRID_GAP);
+                    const defaultY = 130 + Math.floor(idx / maxCols) * (cardHeightFree + GRID_GAP);
                     const posX = t.x ?? defaultX;
                     const posY = t.y ?? defaultY;
                     const isDraggingThis = activeFreeDragId === t.id;
@@ -637,8 +702,8 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
                           position: 'absolute',
                           left: `${posX}px`,
                           top: `${posY}px`,
-                          width: '235px',
-                          height: '310px',
+                          width: `${cardWidthFree}px`,
+                          height: `${cardHeightFree}px`,
                           zIndex: isDraggingThis ? 50 : 15,
                         }}
                         onMouseDown={(e) => handleStartFreeDrag(e, t.id, posX, posY)}
@@ -667,6 +732,9 @@ export const StandCanvas = forwardRef<HTMLDivElement, StandCanvasProps>(
                           onUpdate={(patch) => onUpdateTeacher(t.id, patch)}
                           onDelete={() => onDeleteTeacher(t.id)}
                           isEditable={isEditable}
+                          pages={pages}
+                          activePageIndex={activePageIndex}
+                          onMoveToPage={(target) => onMoveTeacherToPage(t.id, target)}
                         />
                       </div>
                     );

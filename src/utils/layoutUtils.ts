@@ -18,6 +18,9 @@ export interface StandLayoutOptions {
   manualColumns?: number;
   showHeadPerson?: boolean;
   showSchedule?: boolean;
+  referenceColumns?: number;
+  referenceRows?: number;
+  isNewPage?: boolean;
 }
 
 /**
@@ -70,12 +73,80 @@ function buildAvailableSlots(
 export function calculateStandLayout(
   teachersCount: number,
   manualColumns: number = 0,
-  options: { showHeadPerson?: boolean; showSchedule?: boolean } = {}
+  options: StandLayoutOptions = {}
 ): DynamicLayoutResult {
-  const { showHeadPerson = true, showSchedule = true } = options;
+  const {
+    showHeadPerson = true,
+    showSchedule = true,
+    referenceColumns = 6,
+    isNewPage = false,
+  } = options;
   const N = Math.max(0, teachersCount);
 
-  // 1. If manual columns count is forced by user (3..8)
+  // =========================================================================
+  // 0. NEW PAGE (PAGE 2, PAGE 3, ETC.) ADAPTIVE SIZING
+  // Teachers and Schedule must match the exact dimensions of Page 1 cards,
+  // and the sheet height adapts automatically to the minimal number of rows.
+  // Schedule is ALWAYS magnetically attached to the right edge (col = colsCount).
+  // =========================================================================
+  if (isNewPage) {
+    const cols =
+      manualColumns >= 3 && manualColumns <= 8 ? manualColumns : referenceColumns || 6;
+
+    // Find minimal rows R such that available slots >= N
+    let R = 1;
+    while (true) {
+      const headSpan = showHeadPerson ? (R >= 2 ? 2 : 1) : 0;
+      const headPlacement: CellPlacement = showHeadPerson
+        ? { col: 1, row: 1, colSpan: 1, rowSpan: headSpan }
+        : { col: 0, row: 0, colSpan: 0, rowSpan: 0 };
+
+      // Schedule is ALWAYS 1x1 pinned to the right edge at the bottom-most row
+      const schedulePlacement: CellPlacement = showSchedule
+        ? { col: cols, row: R, colSpan: 1, rowSpan: 1 }
+        : { col: 0, row: 0, colSpan: 0, rowSpan: 0 };
+
+      const slots = buildAvailableSlots(cols, R, headPlacement, schedulePlacement);
+
+      if (slots.length >= N || R >= 20) {
+        const teacherPlacements: CellPlacement[] = [];
+        for (let i = 0; i < N; i++) {
+          if (slots[i]) {
+            teacherPlacements.push({
+              col: slots[i].col,
+              row: slots[i].row,
+              colSpan: 1,
+              rowSpan: 1,
+            });
+          }
+        }
+
+        const addSlotPlacement =
+          slots.length > N
+            ? {
+                col: slots[N].col,
+                row: slots[N].row,
+                colSpan: 1,
+                rowSpan: 1,
+              }
+            : null;
+
+        return {
+          rowsCount: R,
+          colsCount: cols,
+          headPlacement,
+          schedulePlacement,
+          teacherPlacements,
+          addSlotPlacement,
+        };
+      }
+      R++;
+    }
+  }
+
+  // =========================================================================
+  // 1. If manual columns count is forced by user (3..8) on Sheet 1
+  // =========================================================================
   if (manualColumns >= 3 && manualColumns <= 8) {
     const cols = manualColumns;
     let rows = 1;
@@ -127,7 +198,10 @@ export function calculateStandLayout(
     }
   }
 
-  // 2. AUTO LAYOUT PRESETS when BOTH Head and Schedule are enabled
+  // =========================================================================
+  // 2. AUTO LAYOUT PRESETS when BOTH Head and Schedule are enabled on Sheet 1
+  // All presets have Schedule pinned to the right edge (col = colsCount) and 1x1!
+  // =========================================================================
   if (showHeadPerson && showSchedule) {
     if (N <= 3) {
       const colsCount = Math.max(3, N + 2);
@@ -175,20 +249,21 @@ export function calculateStandLayout(
           addSlotPlacement: null,
         };
       } else {
+        // N === 4: Schedule is 1x1 pinned to bottom right, leaving 1 slot for Add Teacher
         const teacherPlacements: CellPlacement[] = [
           { col: 2, row: 1, colSpan: 1, rowSpan: 1 },
           { col: 3, row: 1, colSpan: 1, rowSpan: 1 },
+          { col: 4, row: 1, colSpan: 1, rowSpan: 1 },
           { col: 2, row: 2, colSpan: 1, rowSpan: 1 },
-          { col: 3, row: 2, colSpan: 1, rowSpan: 1 },
         ];
-        const schedulePlacement: CellPlacement = { col: 4, row: 1, colSpan: 1, rowSpan: 2 };
+        const schedulePlacement: CellPlacement = { col: 4, row: 2, colSpan: 1, rowSpan: 1 };
         return {
           rowsCount,
           colsCount,
           headPlacement,
           schedulePlacement,
           teacherPlacements,
-          addSlotPlacement: null,
+          addSlotPlacement: { col: 3, row: 2, colSpan: 1, rowSpan: 1 },
         };
       }
     }
@@ -198,16 +273,17 @@ export function calculateStandLayout(
       const colsCount = 5;
       const headPlacement: CellPlacement = { col: 1, row: 1, colSpan: 1, rowSpan: 2 };
 
-      if (N === 6) {
+      if (N === 7) {
         const teacherPlacements: CellPlacement[] = [
           { col: 2, row: 1, colSpan: 1, rowSpan: 1 },
           { col: 3, row: 1, colSpan: 1, rowSpan: 1 },
           { col: 4, row: 1, colSpan: 1, rowSpan: 1 },
+          { col: 5, row: 1, colSpan: 1, rowSpan: 1 },
           { col: 2, row: 2, colSpan: 1, rowSpan: 1 },
           { col: 3, row: 2, colSpan: 1, rowSpan: 1 },
           { col: 4, row: 2, colSpan: 1, rowSpan: 1 },
         ];
-        const schedulePlacement: CellPlacement = { col: 5, row: 1, colSpan: 1, rowSpan: 2 };
+        const schedulePlacement: CellPlacement = { col: 5, row: 2, colSpan: 1, rowSpan: 1 };
         return {
           rowsCount,
           colsCount,
@@ -217,23 +293,23 @@ export function calculateStandLayout(
           addSlotPlacement: null,
         };
       } else {
+        // N === 6: Schedule is 1x1 pinned to bottom right
         const teacherPlacements: CellPlacement[] = [
           { col: 2, row: 1, colSpan: 1, rowSpan: 1 },
           { col: 3, row: 1, colSpan: 1, rowSpan: 1 },
           { col: 4, row: 1, colSpan: 1, rowSpan: 1 },
+          { col: 5, row: 1, colSpan: 1, rowSpan: 1 },
           { col: 2, row: 2, colSpan: 1, rowSpan: 1 },
           { col: 3, row: 2, colSpan: 1, rowSpan: 1 },
-          { col: 4, row: 2, colSpan: 1, rowSpan: 1 },
-          { col: 5, row: 2, colSpan: 1, rowSpan: 1 },
         ];
-        const schedulePlacement: CellPlacement = { col: 5, row: 1, colSpan: 1, rowSpan: 1 };
+        const schedulePlacement: CellPlacement = { col: 5, row: 2, colSpan: 1, rowSpan: 1 };
         return {
           rowsCount,
           colsCount,
           headPlacement,
           schedulePlacement,
           teacherPlacements,
-          addSlotPlacement: null,
+          addSlotPlacement: { col: 4, row: 2, colSpan: 1, rowSpan: 1 },
         };
       }
     }
@@ -243,27 +319,7 @@ export function calculateStandLayout(
       const colsCount = 6;
       const headPlacement: CellPlacement = { col: 1, row: 1, colSpan: 1, rowSpan: 2 };
 
-      if (N === 8) {
-        const teacherPlacements: CellPlacement[] = [
-          { col: 2, row: 1, colSpan: 1, rowSpan: 1 },
-          { col: 3, row: 1, colSpan: 1, rowSpan: 1 },
-          { col: 4, row: 1, colSpan: 1, rowSpan: 1 },
-          { col: 5, row: 1, colSpan: 1, rowSpan: 1 },
-          { col: 2, row: 2, colSpan: 1, rowSpan: 1 },
-          { col: 3, row: 2, colSpan: 1, rowSpan: 1 },
-          { col: 4, row: 2, colSpan: 1, rowSpan: 1 },
-          { col: 5, row: 2, colSpan: 1, rowSpan: 1 },
-        ];
-        const schedulePlacement: CellPlacement = { col: 6, row: 1, colSpan: 1, rowSpan: 2 };
-        return {
-          rowsCount,
-          colsCount,
-          headPlacement,
-          schedulePlacement,
-          teacherPlacements,
-          addSlotPlacement: null,
-        };
-      } else {
+      if (N === 9) {
         const teacherPlacements: CellPlacement[] = [
           { col: 2, row: 1, colSpan: 1, rowSpan: 1 },
           { col: 3, row: 1, colSpan: 1, rowSpan: 1 },
@@ -284,11 +340,35 @@ export function calculateStandLayout(
           teacherPlacements,
           addSlotPlacement: null,
         };
+      } else {
+        // N === 8: Schedule is 1x1 pinned to bottom right
+        const teacherPlacements: CellPlacement[] = [
+          { col: 2, row: 1, colSpan: 1, rowSpan: 1 },
+          { col: 3, row: 1, colSpan: 1, rowSpan: 1 },
+          { col: 4, row: 1, colSpan: 1, rowSpan: 1 },
+          { col: 5, row: 1, colSpan: 1, rowSpan: 1 },
+          { col: 6, row: 1, colSpan: 1, rowSpan: 1 },
+          { col: 2, row: 2, colSpan: 1, rowSpan: 1 },
+          { col: 3, row: 2, colSpan: 1, rowSpan: 1 },
+          { col: 4, row: 2, colSpan: 1, rowSpan: 1 },
+        ];
+        const schedulePlacement: CellPlacement = { col: 6, row: 2, colSpan: 1, rowSpan: 1 };
+        return {
+          rowsCount,
+          colsCount,
+          headPlacement,
+          schedulePlacement,
+          teacherPlacements,
+          addSlotPlacement: { col: 5, row: 2, colSpan: 1, rowSpan: 1 },
+        };
       }
     }
   }
 
-  // 3. GENERAL DYNAMIC AUTO LAYOUT (Supports pages with only teachers, or only schedule, etc.)
+  // =========================================================================
+  // 3. GENERAL DYNAMIC AUTO LAYOUT (Sheet 1 with any number of teachers)
+  // Schedule is ALWAYS 1x1 pinned to the bottom-right corner (col: bestCols, row: bestRows).
+  // =========================================================================
   const reservedSlots = (showHeadPerson ? 2 : 0) + (showSchedule ? 1 : 0);
   const totalSlotsNeeded = N + reservedSlots;
 

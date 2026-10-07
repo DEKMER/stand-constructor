@@ -534,6 +534,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       </div>
                     </div>
 
+                    {/* Move to another page if multi-page */}
+                    {pages.length > 1 && onMoveTeacherToPage && (
+                      <div className="flex items-center justify-between text-[11px] bg-slate-900/60 px-2.5 py-1 rounded-lg border border-slate-700/50">
+                        <span className="text-slate-400 font-medium">Перенести на:</span>
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            const target = parseInt(e.target.value, 10);
+                            if (!isNaN(target)) onMoveTeacherToPage(t.id, target);
+                          }}
+                          className="bg-slate-800 text-amber-200 border border-amber-500/40 rounded px-2 py-0.5 text-[10.5px] cursor-pointer hover:bg-slate-700"
+                        >
+                          <option value="" disabled>
+                            Выбрать лист...
+                          </option>
+                          {pages.map((p, pIdx) =>
+                            pIdx !== activePageIndex ? (
+                              <option key={p.id} value={pIdx}>
+                                {p.name}
+                              </option>
+                            ) : null
+                          )}
+                        </select>
+                      </div>
+                    )}
+
                     {/* Detailed Fields: Surname, Name, Patronymic, Position */}
                     <div className="space-y-1.5 pt-1.5 border-t border-slate-700/60 text-xs">
                       <div>

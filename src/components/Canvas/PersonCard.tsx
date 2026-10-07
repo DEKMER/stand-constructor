@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { Teacher, StandConfig } from '../../types/stand';
-import { Camera, Trash2, ArrowLeft, ArrowRight, ZoomIn, ZoomOut, GripVertical, Crop } from 'lucide-react';
+import { Camera, Trash2, ArrowLeft, ArrowRight, ZoomIn, ZoomOut, GripVertical, Crop, FileText } from 'lucide-react';
 import { ImageCropModal } from '../Controls/ImageCropModal';
+import { StandPage } from '../../types/stand';
 
 interface PersonCardProps {
   teacher: Teacher;
@@ -17,6 +18,9 @@ interface PersonCardProps {
   onDrop?: (e: React.DragEvent) => void;
   isDragging?: boolean;
   isDropTarget?: boolean;
+  pages?: StandPage[];
+  activePageIndex?: number;
+  onMoveToPage?: (targetPageIndex: number) => void;
 }
 
 export const PersonCard: React.FC<PersonCardProps> = ({
@@ -32,6 +36,9 @@ export const PersonCard: React.FC<PersonCardProps> = ({
   onDrop,
   isDragging = false,
   isDropTarget = false,
+  pages,
+  activePageIndex = 0,
+  onMoveToPage,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const photoContainerRef = useRef<HTMLDivElement>(null);
@@ -186,6 +193,30 @@ export const PersonCard: React.FC<PersonCardProps> = ({
             >
               <ZoomOut className="w-3 h-3" />
             </button>
+            {pages && pages.length > 1 && onMoveToPage && (
+              <select
+                value=""
+                onChange={(e) => {
+                  e.stopPropagation();
+                  const target = parseInt(e.target.value, 10);
+                  if (!isNaN(target)) onMoveToPage(target);
+                }}
+                onClick={(e) => e.stopPropagation()}
+                title="Переместить преподавателя на другой лист"
+                className="bg-slate-800 text-[10px] text-amber-200 border border-amber-500/40 rounded px-1 py-0.5 cursor-pointer hover:bg-slate-700 ml-1"
+              >
+                <option value="" disabled>
+                  Лист...
+                </option>
+                {pages.map((p, pIdx) =>
+                  pIdx !== activePageIndex ? (
+                    <option key={p.id} value={pIdx} className="bg-slate-900 text-white">
+                      {p.name}
+                    </option>
+                  ) : null
+                )}
+              </select>
+            )}
             {onDelete && (
               <button
                 type="button"
