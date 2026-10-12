@@ -846,16 +846,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                   {header.showLogo && (
                     <div className="flex items-center gap-3 bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60">
-                      <div className="w-12 h-12 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center p-1 overflow-hidden flex-shrink-0">
-                        {header.logoUrl ? (
-                          <img
-                            src={header.logoUrl}
-                            alt="Герб / логотип"
-                            className="w-full h-full object-contain"
-                          />
-                        ) : (
-                          <span className="text-slate-500 text-[10px]">Нет</span>
-                        )}
+                      <div className="w-12 h-12 rounded-lg bg-white border border-slate-300 flex items-center justify-center p-1 overflow-hidden flex-shrink-0 shadow-xs">
+                        <img
+                          src={header.logoUrl || './logo-ieu.png'}
+                          alt="Герб / логотип"
+                          className="w-full h-full object-contain"
+                        />
                       </div>
                       <div className="flex flex-col gap-1.5 flex-1 min-w-0">
                         <label className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded cursor-pointer transition-colors text-xs font-medium">
@@ -871,7 +867,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 const reader = new FileReader();
                                 reader.onload = (evt) => {
                                   if (evt.target?.result) {
-                                    onUpdateHeader({ logoUrl: evt.target.result as string });
+                                    onUpdateHeader({ logoUrl: evt.target.result as string, isCustomLogo: true });
                                   }
                                 };
                                 reader.readAsDataURL(file);
@@ -881,7 +877,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         </label>
                         <button
                           type="button"
-                          onClick={() => onUpdateHeader({ logoUrl: DEFAULT_UNIVERSITY_LOGO })}
+                          onClick={() => onUpdateHeader({ logoUrl: DEFAULT_UNIVERSITY_LOGO, isCustomLogo: false })}
                           className="flex items-center justify-center gap-1.5 px-2 py-1 bg-rose-950/40 hover:bg-rose-900/60 text-rose-200 border border-rose-800/50 rounded transition-colors text-[11px]"
                           title="Вернуть официальный герб Института экономики и управления"
                         >

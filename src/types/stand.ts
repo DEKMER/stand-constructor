@@ -59,6 +59,7 @@ export interface HeaderInfo {
   departmentName: string;
   logoUrl: string;
   showLogo: boolean;
+  isCustomLogo?: boolean;
 }
 
 export interface BlockLayout {

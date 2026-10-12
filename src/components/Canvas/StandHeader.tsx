@@ -23,7 +23,7 @@ export const StandHeader: React.FC<StandHeaderProps> = ({
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
-          onUpdateHeader({ logoUrl: event.target.result as string });
+          onUpdateHeader({ logoUrl: event.target.result as string, isCustomLogo: true });
         }
       };
       reader.readAsDataURL(file);
@@ -47,20 +47,16 @@ export const StandHeader: React.FC<StandHeaderProps> = ({
           {header.showLogo && (
             <div
               onClick={() => isEditable && fileInputRef.current?.click()}
-              className={`relative group flex-shrink-0 w-14 h-14 rounded-xl bg-white/15 p-1.5 border border-white/30 shadow-md flex items-center justify-center transition-all ${
-                isEditable ? 'cursor-pointer hover:bg-white/25 hover:scale-105' : ''
+              className={`relative group flex-shrink-0 w-14 h-14 rounded-xl bg-white p-1.5 shadow-md border-2 border-white/80 flex items-center justify-center overflow-hidden transition-all ${
+                isEditable ? 'cursor-pointer hover:shadow-lg hover:scale-105' : ''
               }`}
               title="Нажмите, чтобы загрузить логотип"
             >
-              {header.logoUrl ? (
-                <img
-                  src={header.logoUrl}
-                  alt="Логотип университета"
-                  className="w-full h-full object-contain filter drop-shadow"
-                />
-              ) : (
-                <Sparkles className="w-8 h-8 text-white" />
-              )}
+              <img
+                src={header.logoUrl || './logo-ieu.png'}
+                alt="Герб Института экономики и управления"
+                className="w-full h-full object-contain"
+              />
               {isEditable && (
                 <div className="no-print-export absolute inset-0 bg-black/60 rounded-xl opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[9px] font-medium transition-opacity">
                   <Upload className="w-3.5 h-3.5 mb-0.5" />

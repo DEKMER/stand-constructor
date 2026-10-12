@@ -157,6 +157,7 @@ export const initialStandData: StandData = {
     departmentName: 'КАФЕДРА МЕНЕДЖМЕНТА И МАРКЕТИНГА',
     logoUrl: DEFAULT_UNIVERSITY_LOGO,
     showLogo: true,
+    isCustomLogo: false,
   },
   headPerson: {
     lastName: 'ГУЩИНА',

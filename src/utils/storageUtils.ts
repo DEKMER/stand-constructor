@@ -51,14 +51,18 @@ export const loadStandFromStorage = (): StandData => {
           ? parsed.activePageIndex
           : 0;
 
-      // Logo migration: if user previously had the old placeholder SVG or missing logoUrl, migrate to official IEM emblem
+      // Logo migration & default guarantee:
+      // Unless user explicitly uploaded a custom logo (isCustomLogo: true), always guarantee official IEM coat of arms
       const loadedHeader = { ...initialStandData.header, ...parsed.header };
       if (
+        !loadedHeader.isCustomLogo ||
         !loadedHeader.logoUrl ||
-        loadedHeader.logoUrl.includes('polygon points="50,4') ||
-        loadedHeader.logoUrl.includes('data:image/svg+xml;utf8,<svg')
+        loadedHeader.logoUrl.startsWith('data:image/svg+xml') ||
+        loadedHeader.logoUrl.includes('<svg') ||
+        loadedHeader.logoUrl.includes('polygon')
       ) {
         loadedHeader.logoUrl = initialStandData.header.logoUrl;
+        loadedHeader.isCustomLogo = false;
       }
 
       return {
