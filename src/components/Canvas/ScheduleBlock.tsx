@@ -18,9 +18,9 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
   return (
     <div className="relative flex flex-col justify-between h-full min-h-0 bg-gradient-to-br from-[#bd1818] via-[#9e1010] to-[#6e0808] text-white rounded-xl p-3 shadow-xl border-2 border-rose-300/40 overflow-hidden text-left">
       {/* TOP SECTION: Auditorium & Schedule */}
-      <div className="space-y-2">
+      <div className="space-y-2.5 min-w-0">
         {/* Auditorium Badge */}
-        <div className="flex items-center gap-2 bg-white/20 hover:bg-white/25 backdrop-blur-md px-3 py-1 rounded-lg border border-white/30 w-fit shadow-xs transition-colors">
+        <div className="flex items-center gap-2 bg-white/20 hover:bg-white/25 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/30 w-fit max-w-full shadow-xs transition-colors whitespace-nowrap">
           <MapPin className="w-3.5 h-3.5 text-rose-200 flex-shrink-0" />
           {isEditable ? (
             <input
@@ -28,25 +28,25 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
               value={schedule.auditorium}
               onChange={(e) => onUpdate({ auditorium: e.target.value })}
               placeholder="Аудитория: 4-16В"
-              className="bg-transparent text-white font-extrabold text-sm xl:text-base tracking-wider focus:outline-none border-b border-transparent focus:border-white w-40 leading-none"
+              className="bg-transparent text-white font-extrabold text-sm xl:text-base tracking-wider focus:outline-none border-b border-transparent focus:border-white w-40 whitespace-nowrap leading-none"
             />
           ) : (
-            <span className="font-extrabold text-sm xl:text-base tracking-wider leading-none">
+            <span className="font-extrabold text-sm xl:text-base tracking-wider leading-none whitespace-nowrap">
               {schedule.auditorium}
             </span>
           )}
         </div>
 
         {/* Schedule Title */}
-        <div className="flex items-center gap-1.5 text-rose-200 text-xs font-black uppercase tracking-wider">
+        <div className="flex items-center gap-1.5 text-rose-200 text-xs font-black uppercase tracking-wider whitespace-nowrap">
           <Clock className="w-3.5 h-3.5 text-rose-300 flex-shrink-0" />
-          <span>График работы кафедры</span>
+          <span className="whitespace-nowrap">График работы кафедры</span>
         </div>
 
         {/* Hours Table with Exact Uniform Sizing for all 3 lines */}
-        <div className="space-y-1.5 border-l-2 border-rose-400/80 pl-2.5 py-0.5 text-xs xl:text-sm">
+        <div className="space-y-2 border-l-2 border-rose-400/80 pl-2.5 py-0.5 text-xs xl:text-sm min-w-0">
           {/* Workdays */}
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2 whitespace-nowrap min-w-0 leading-tight">
             {isEditable ? (
               <>
                 <input
@@ -54,26 +54,26 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
                   value={schedule.workDaysTitle}
                   onChange={(e) => onUpdate({ workDaysTitle: e.target.value })}
                   placeholder="ПН - ЧТ"
-                  className="bg-transparent text-rose-100 font-bold w-20 focus:outline-none text-xs xl:text-sm"
+                  className="bg-transparent text-rose-100 font-bold w-16 xl:w-20 flex-shrink-0 focus:outline-none text-xs xl:text-sm whitespace-nowrap"
                 />
                 <input
                   type="text"
                   value={schedule.workDaysHours}
                   onChange={(e) => onUpdate({ workDaysHours: e.target.value })}
                   placeholder="8:15 - 17:00"
-                  className="bg-transparent text-white font-black text-right w-28 focus:outline-none text-xs xl:text-sm"
+                  className="bg-transparent text-white font-black text-right flex-1 min-w-0 focus:outline-none text-xs xl:text-sm font-mono tabular-nums whitespace-nowrap"
                 />
               </>
             ) : (
               <>
-                <span className="text-rose-100 font-bold">{schedule.workDaysTitle}:</span>
-                <span className="text-white font-black tracking-wide">{schedule.workDaysHours}</span>
+                <span className="text-rose-100 font-bold whitespace-nowrap flex-shrink-0">{schedule.workDaysTitle}:</span>
+                <span className="text-white font-black tracking-wide whitespace-nowrap flex-shrink-0 font-mono tabular-nums text-right ml-auto">{schedule.workDaysHours}</span>
               </>
             )}
           </div>
 
           {/* Friday */}
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2 whitespace-nowrap min-w-0 leading-tight">
             {isEditable ? (
               <>
                 <input
@@ -81,26 +81,26 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
                   value={schedule.fridayTitle}
                   onChange={(e) => onUpdate({ fridayTitle: e.target.value })}
                   placeholder="ПТ"
-                  className="bg-transparent text-rose-100 font-bold w-20 focus:outline-none text-xs xl:text-sm"
+                  className="bg-transparent text-rose-100 font-bold w-16 xl:w-20 flex-shrink-0 focus:outline-none text-xs xl:text-sm whitespace-nowrap"
                 />
                 <input
                   type="text"
                   value={schedule.fridayHours}
                   onChange={(e) => onUpdate({ fridayHours: e.target.value })}
                   placeholder="8:15 - 16:00"
-                  className="bg-transparent text-white font-black text-right w-28 focus:outline-none text-xs xl:text-sm"
+                  className="bg-transparent text-white font-black text-right flex-1 min-w-0 focus:outline-none text-xs xl:text-sm font-mono tabular-nums whitespace-nowrap"
                 />
               </>
             ) : (
               <>
-                <span className="text-rose-100 font-bold">{schedule.fridayTitle}:</span>
-                <span className="text-white font-black tracking-wide">{schedule.fridayHours}</span>
+                <span className="text-rose-100 font-bold whitespace-nowrap flex-shrink-0">{schedule.fridayTitle}:</span>
+                <span className="text-white font-black tracking-wide whitespace-nowrap flex-shrink-0 font-mono tabular-nums text-right ml-auto">{schedule.fridayHours}</span>
               </>
             )}
           </div>
 
           {/* Lunch Break - Exactly same size and weight */}
-          <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/15">
+          <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/15 whitespace-nowrap min-w-0 leading-tight">
             {isEditable ? (
               <>
                 <input
@@ -108,20 +108,20 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
                   value={schedule.lunchTitle}
                   onChange={(e) => onUpdate({ lunchTitle: e.target.value })}
                   placeholder="Обед"
-                  className="bg-transparent text-rose-100 font-bold w-20 focus:outline-none text-xs xl:text-sm"
+                  className="bg-transparent text-rose-100 font-bold w-16 xl:w-20 flex-shrink-0 focus:outline-none text-xs xl:text-sm whitespace-nowrap"
                 />
                 <input
                   type="text"
                   value={schedule.lunchHours}
                   onChange={(e) => onUpdate({ lunchHours: e.target.value })}
                   placeholder="12:27 - 13:00"
-                  className="bg-transparent text-white font-black text-right w-28 focus:outline-none text-xs xl:text-sm"
+                  className="bg-transparent text-white font-black text-right flex-1 min-w-0 focus:outline-none text-xs xl:text-sm font-mono tabular-nums whitespace-nowrap"
                 />
               </>
             ) : (
               <>
-                <span className="text-rose-100 font-bold">{schedule.lunchTitle}:</span>
-                <span className="text-white font-black tracking-wide">{schedule.lunchHours}</span>
+                <span className="text-rose-100 font-bold whitespace-nowrap flex-shrink-0">{schedule.lunchTitle}:</span>
+                <span className="text-white font-black tracking-wide whitespace-nowrap flex-shrink-0 font-mono tabular-nums text-right ml-auto">{schedule.lunchHours}</span>
               </>
             )}
           </div>
@@ -129,9 +129,9 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
       </div>
 
       {/* MIDDLE SECTION: Full-Width Phone & Email Contacts (Never truncated) */}
-      <div className="pt-2 border-t border-white/20 space-y-1.5 text-xs xl:text-sm">
+      <div className="pt-2 border-t border-white/20 space-y-1.5 text-xs xl:text-sm min-w-0">
         {/* Phone */}
-        <div className="flex items-center gap-2 text-rose-100">
+        <div className="flex items-center gap-2 text-rose-100 whitespace-nowrap min-w-0 leading-tight">
           <div className="w-5 h-5 rounded-full bg-white/15 flex items-center justify-center flex-shrink-0">
             <Phone className="w-3 h-3 text-rose-200" />
           </div>
@@ -141,15 +141,15 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
               value={schedule.phone}
               onChange={(e) => onUpdate({ phone: e.target.value })}
               placeholder="Телефон"
-              className="bg-transparent text-white font-bold focus:outline-none w-full text-xs xl:text-sm"
+              className="bg-transparent text-white font-bold focus:outline-none w-full text-xs xl:text-sm whitespace-nowrap"
             />
           ) : (
-            <span className="text-white font-bold tracking-wide whitespace-nowrap">{schedule.phone}</span>
+            <span className="text-white font-bold tracking-wide whitespace-nowrap truncate">{schedule.phone}</span>
           )}
         </div>
 
         {/* Email */}
-        <div className="flex items-center gap-2 text-rose-100">
+        <div className="flex items-center gap-2 text-rose-100 whitespace-nowrap min-w-0 leading-tight">
           <div className="w-5 h-5 rounded-full bg-white/15 flex items-center justify-center flex-shrink-0">
             <Mail className="w-3 h-3 text-rose-200" />
           </div>
@@ -159,17 +159,17 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
               value={schedule.email}
               onChange={(e) => onUpdate({ email: e.target.value })}
               placeholder="Email"
-              className="bg-transparent text-white font-semibold focus:outline-none w-full text-xs xl:text-sm"
+              className="bg-transparent text-white font-semibold focus:outline-none w-full text-xs xl:text-sm whitespace-nowrap"
             />
           ) : (
-            <span className="text-white font-semibold text-xs xl:text-sm whitespace-nowrap">{schedule.email}</span>
+            <span className="text-white font-semibold text-xs xl:text-sm whitespace-nowrap truncate">{schedule.email}</span>
           )}
         </div>
       </div>
 
       {/* BOTTOM SECTION: Crisp QR Code with Label */}
       {schedule.showQr && (
-        <div className="pt-2 border-t border-white/15 flex items-center justify-start gap-2.5">
+        <div className="pt-2 border-t border-white/15 flex items-center justify-start gap-2.5 min-w-0">
           <div className="p-1 bg-white rounded-lg shadow-sm flex-shrink-0">
             <QRCodeSVG
               value={schedule.qrUrl || 'https://volsu.ru'}
@@ -187,10 +187,10 @@ export const ScheduleBlock: React.FC<ScheduleBlockProps> = ({
                 value={schedule.qrLabel}
                 onChange={(e) => onUpdate({ qrLabel: e.target.value })}
                 placeholder="Сайт кафедры"
-                className="bg-transparent text-xs xl:text-sm font-black uppercase tracking-wider text-rose-100 focus:outline-none border-b border-transparent focus:border-white w-full"
+                className="bg-transparent text-xs xl:text-sm font-black uppercase tracking-wider text-rose-100 focus:outline-none border-b border-transparent focus:border-white w-full whitespace-nowrap truncate"
               />
             ) : (
-              <span className="text-xs xl:text-sm font-black uppercase tracking-wider text-rose-100 block">
+              <span className="text-xs xl:text-sm font-black uppercase tracking-wider text-rose-100 block whitespace-nowrap truncate">
                 {schedule.qrLabel || 'Сайт кафедры'}
               </span>
             )}

@@ -1,16 +1,6 @@
 import { StandData, Teacher } from '../types/stand';
-
-// Default SVG university emblem matching classical academic architecture & torch with exact IEM brand red (#BD1818)
-export const DEFAULT_UNIVERSITY_LOGO = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
-  <polygon points="50,4 94,24 82,88 50,98 18,88 6,24" fill="%23bd1818" stroke="%23ffffff" stroke-width="3"/>
-  <path d="M50 14 L80 28 L72 80 L50 88 L28 80 L20 28 Z" fill="%23e02626" opacity="0.4"/>
-  <rect x="36" y="42" width="6" height="26" fill="%23ffffff" rx="2"/>
-  <rect x="47" y="38" width="6" height="30" fill="%23ffffff" rx="2"/>
-  <rect x="58" y="42" width="6" height="26" fill="%23ffffff" rx="2"/>
-  <polygon points="32,40 68,40 50,24" fill="%23ffffff"/>
-  <rect x="30" y="68" width="40" height="5" fill="%23ffffff" rx="1"/>
-  <circle cx="50" cy="80" r="3" fill="%23ffffff"/>
-</svg>`;
+import { DEFAULT_UNIVERSITY_LOGO } from './defaultLogoBase64';
+export { DEFAULT_UNIVERSITY_LOGO };
 
 // Default stylized placeholder portraits using IEM red palette
 const createAvatarSvg = (gender: 'f' | 'm', initial: string, bgColor: string) => {
